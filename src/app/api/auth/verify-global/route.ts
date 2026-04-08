@@ -34,7 +34,10 @@ export async function POST(request: Request) {
 
     // Success check: If 'code' exists and is not empty, it's usually an error (e.g., 'data-not-found')
     // If auth is successful, it should return a session/user object or at least no error code
-    if (data.code && data.code !== '') {
+    // Success check: If 'code' exists and is not 'ok', it's an error.
+    const isError = data.code && data.code.toLowerCase() !== 'ok';
+    
+    if (isError) {
       return NextResponse.json({ 
         success: false, 
         message: data.message || 'Geçersiz kullanıcı adı veya şifre.',
