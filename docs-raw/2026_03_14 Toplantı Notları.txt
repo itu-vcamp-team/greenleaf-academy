@@ -1,0 +1,58 @@
+https://greenleaf-global.com/
+
+domain: https://greenleafakademi.com 
+
+
+dünya iban:
+TR77 0001 0011 6061 8926 9350 03
+Ziraat Isparta Şubesi Adres (1160 şube kodu)
+Piri Mehmet Mimar Sinan Caddesi No:21, 32100 Merkez/Isparta
+
+
+Misafir kaydolduğunda hold olacak.
+
+Admin, Editor, Partner ve Misafir var.
+
+Her admin, editör birer partnerdir. 
+
+Her admin , davetiye kodu oluşturulabilir. THİS kod 1 den fazla partner giriş yapamayacaktır. Bu kod link de olabilir. “Link olsa daha iyi”
+
+
+Gaffar Dulkadir üye oldu. giriş yaparken üst admin seçip, açıklamaya da kendi supervisor ın adını girip davetiye sisteme düşüyor.
+
+Sertifika ekle çıkart. Her şeyin çok dilli yapıyı sağlıyor olması. Yine dinamik olacak. 
+
+2 aşamalı doğrulama yapılması.
+
+Giriş hatasında bloklanma olması lazım.
+
+Aydınlatma metni saati
+
+kvkk/RGPD yazılması aydınlatma verisi etc.
+Yasal hesap sil butonu. her şeyi silebilmesi lazım.
+
+Autoback-up alınması günlük. Snapshoot alınması hem sistem hem backup.
+	İlk 3 100,200 kişi kaydolur. 
+	
+
+Mailing kısmının araştırılması  lazım. Opensource model var.
+
+Yeni kredi kartımın yıllık maliyetlerin hesaplanılması.
+
+Video linkinin açılması. site linkiyle birleştirilmesi ve linklerin açılamaması lazım.
+
+Çift cihazda açılmaması lazım. Veya 2 ayrı oturum tutulmaması.
+
+Bülten kısmının eklenilmesi, duyuru gibi bişe
+
+drive dosyası linkleri public yapılabiliniyor mu bakılması.
+	minio server alınabilinir. veya youtube
+videonun metedosyası, bir pdf etc dosyası
+	indirilebilinir indirilmez data seçilebilinmedli.
+etlinlik ekle çıkart. konu elinle yaz. bazı şeyler elle otomatik seçilmeli. Bunu ekle çıkart yapılmalı. Takvimin 
+
+google drive a bir video yükleyip, o videoyu public gösterip, o videonun linkişni bir websitede embed olarak oynatabilir miyiz? oynatabilirsek neye ihtiyacım var tam bir kapsamlı yapım yol haritası yapar mısın
+
+
+
+kazanç hesaplamada top 20 ürün
