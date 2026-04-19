@@ -48,7 +48,7 @@ services:
         value: https://greenleaf-backend.onrender.com
 
   # --- DATABASE ---
-  - type: pserv
+  - type: postgres
     name: greenleaf-postgres
     databaseName: greenleaf_db
     databaseUser: greenleaf
