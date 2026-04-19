@@ -256,6 +256,8 @@ class RepositoryFactory:
         return BaseRepository(self.session, model_class)
 
 
+from ._tenant_base_repository import AsyncTenantBaseRepository
+
 class AsyncRepositoryFactory:
     """Factory for creating asynchronous repositories"""
     
@@ -265,3 +267,7 @@ class AsyncRepositoryFactory:
     def get_repository(self, model_class: type[T]) -> AsyncBaseRepository[T]:
         """Create an async repository for the given model class"""
         return AsyncBaseRepository(self.session, model_class)
+
+    def get_tenant_repository(self, model_class: type[T], tenant_id: uuid.UUID) -> AsyncTenantBaseRepository[T]:
+        """Create an async repository that is automatically filtered by tenant_id"""
+        return AsyncTenantBaseRepository(self.session, model_class, tenant_id)

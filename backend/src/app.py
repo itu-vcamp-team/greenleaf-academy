@@ -1,7 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from src.app_lifespan import lifespan
 from src.config import get_settings
+from src.middleware.tenant_middleware import TenantMiddleware
 
 settings = get_settings()
 
@@ -21,6 +22,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(TenantMiddleware)
 
 # Health check endpoint
 @app.get("/health", tags=["System"])
