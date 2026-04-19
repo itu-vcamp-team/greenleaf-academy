@@ -15,6 +15,12 @@ from src.routes.academy import router as academy_router
 from src.routes.progress import router as progress_router
 from src.routes.favorites import router as favorites_router
 from src.routes.events import router as events_router
+from src.routes.reference_codes import router as reference_codes_router
+from src.routes.admin_users import router as admin_users_router
+from src.routes.announcements import router as announcements_router
+from src.routes.resource_links import router as resources_router
+from src.routes.waitlist import router as waitlist_router
+from src.routes.admin_stats import router as admin_stats_router
 
 settings = get_settings()
 
@@ -60,6 +66,14 @@ app.include_router(events_router, prefix="/api")
 
 # Admin & Maintenance Routes
 app.include_router(admin_maintenance_router, prefix="/api")
+app.include_router(admin_users_router, prefix="/api")
+app.include_router(admin_stats_router, prefix="/api")
+
+# Content & Support Management (Admin Only)
+app.include_router(announcements_router, prefix="/api")
+app.include_router(resources_router, prefix="/api")
+app.include_router(waitlist_router, prefix="/api")
+app.include_router(reference_codes_router, prefix="/api")
 
 
 # --- Health Check ---

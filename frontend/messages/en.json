@@ -18,10 +18,31 @@
     "captcha_hint": "Enter the sum of the numbers"
   },
   "academy": {
+    "title": "Greenleaf Academy",
+    "subtitle": "Develop yourself and grow your professional network.",
     "continue_watching": "Continue watching",
     "locked": "This content is locked",
+    "locked_hint": "Unlock this content by completing the previous one.",
     "completed": "Completed",
     "mark_complete": "Mark as Complete",
-    "search_placeholder": "Search content..."
+    "search_placeholder": "Search content... (title, description)",
+    "loading": "Searching...",
+    "no_results": "No results found for",
+    "generate_new_code": "Generate New Code",
+    "generating": "Generating...",
+    "invite_code": "Invitation Code",
+    "invite_code_hint": "Create a one-time reference code to add someone new to your prospect list.",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "one_time_code_warning": "This code can only be used once.",
+    "my_children": "My Prospects",
+    "no_children": "You haven't invited anyone yet. Start building your team by sharing the Momentum vision!",
+    "view_details": "View Details",
+    "back_to_dashboard": "Back to Dashboard",
+    "back_to_list": "Back to List",
+    "view_resource": "View Resource File",
+    "watching": "Watching...",
+    "add_favorite": "Add to Favorites",
+    "progress": "Progress"
   }
 }

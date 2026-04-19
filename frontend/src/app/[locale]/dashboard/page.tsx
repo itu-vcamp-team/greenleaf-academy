@@ -1,238 +1,311 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  TrendingUp, Users, Target, Award, Clock, ArrowUpRight, 
+  Shield, Zap, Lock, ChevronRight, UserPlus, Info
+} from "lucide-react";
+
 import { Navbar } from "@/components/ui/Navbar";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
-import { TrendingUp, Users, Target, Award, Clock, ArrowUpRight, Shield, Zap, Lock, ChevronRight } from "lucide-react";
+import MyProgressStats from "@/components/academy/MyProgressStats";
+import ReferenceCodeGenerator from "@/components/academy/ReferenceCodeGenerator";
+import ChildDetailModal from "@/components/academy/ChildDetailModal";
+import apiClient from "@/lib/api-client";
 import { useUserRole } from "@/context/UserRoleContext";
 import { useTenant } from "@/context/TenantContext";
-import { motion } from "framer-motion";
-import Link from "next/link";
+
+interface ChildUser {
+  id: string;
+  full_name: string;
+  partner_id: string;
+  role: string;
+  shorts_percentage: number;
+  masterclass_percentage: number;
+  is_active: boolean;
+}
 
 export default function DashboardPage() {
+  const t = useTranslations("academy");
   const { role } = useUserRole();
   const { activeTenant } = useTenant();
-  const isTR = activeTenant.slug === "tr";
   const isGuest = role === "GUEST";
+  
+  const [children, setChildren] = useState<ChildUser[]>([]);
+  const [loadingChildren, setLoadingChildren] = useState(!isGuest);
+  const [selectedChild, setSelectedChild] = useState<{ id: string, name: string } | null>(null);
+  const [childProgress, setChildProgress] = useState<any[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  useEffect(() => {
+    if (!isGuest) {
+      apiClient.get("/admin/users/my-children")
+        .then(res => {
+          setChildren(res.data);
+          setLoadingChildren(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch children:", err);
+          setLoadingChildren(false);
+        });
+    }
+  }, [isGuest]);
+
+  const handleChildClick = async (childId: string, childName: string) => {
+    setSelectedChild({ id: childId, name: childName });
+    setLoadingDetail(true);
+    try {
+      const res = await apiClient.get(`/admin/users/child/${childId}/progress`);
+      setChildProgress(res.data);
+    } catch (err) {
+      console.error("Failed to fetch child progress:", err);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <Navbar />
       
       <main className="max-w-7xl mx-auto pt-32 px-6">
+        {/* Header Section */}
         <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-2">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-2"
+          >
             <div className="flex items-center gap-3 text-primary mb-2">
                 <Zap className="w-5 h-5" fill="currentColor" fillOpacity={0.2} />
                 <span className="text-xs font-black uppercase tracking-[0.3em]">
-                {isTR ? "Liderlik Paneli Önizlemesi" : "Leader-Panel Vorschau"}
+                   Dashboard
                 </span>
             </div>
             <h1 className="text-4xl font-black tracking-tight text-foreground">
-                {isTR ? "Momentum" : "Momentum"} <span className="text-primary italic">{isTR ? "Vizyonu" : "Vision"}</span>
+                Momentum <span className="text-primary italic">Vision</span>
             </h1>
-          </div>
+          </motion.div>
 
           {isGuest && (
-            <Link href="/auth/register">
-                <Button className="rounded-2xl px-8 py-6 gap-3 shadow-xl shadow-primary/20 bg-primary hover:bg-primary-dark text-white font-black group">
-                    {isTR ? "Partnerliğe Geçiş Yap" : "Zum Partner aufsteigen"} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-            </Link>
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+              <Button asChild className="rounded-2xl px-8 py-6 gap-3 shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-white font-black group transition-all">
+                <a href="/auth/register">
+                    Partnerliğe Geçiş Yap <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </a>
+              </Button>
+            </motion.div>
           )}
         </header>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <MomentumStat 
             icon={<TrendingUp />} 
-            label={isTR ? "Haftalık Kazanç" : "Wochengewinn"} 
-            value={isGuest ? "1.XXX $" : "1,240 $"} 
+            label="Genel Bakış" 
+            value={isGuest ? "XXX" : "Aktif"} 
             trend="+12%" 
             isGuest={isGuest}
-            explainer={isTR ? "Kazançlarınız burada birikecek." : "Ihre Gewinne werden hier angezeigt."}
           />
           <MomentumStat 
             icon={<Users />} 
-            label={isTR ? "Aday Listesi" : "Interessenten"} 
-            value={isGuest ? "XX" : "24"} 
-            trend="+5" 
+            label="Aday Listesi" 
+            value={isGuest ? "XX" : children.length.toString()} 
+            trend={`+${children.filter(c => !c.is_active).length} Yeni`} 
             isGuest={isGuest}
-            explainer={isTR ? "Ekibinizi buradan yöneteceksiniz." : "Verwalten Sie Ihr Team hier."}
           />
           <MomentumStat 
             icon={<Target />} 
-            label={isTR ? "Akademi Puanı" : "Akademie-Punkte"} 
+            label="Eğitim Puanı" 
             value={isGuest ? "XXX" : "850"} 
             trend="Lvl 4" 
             isGuest={isGuest}
-            explainer={isTR ? "Eğitim puanlarınız burada görünecek." : "Ihre Trainingspunkte werden hier angezeigt."}
           />
           <MomentumStat 
             icon={<Award />} 
-            label={isTR ? "Aktiflik Durumu" : "Aktivitätsstatus"} 
-            value={isTR ? "Aktif" : "Aktiv"} 
-            trend="90 Gün" 
+            label="Rütbe" 
+            value={role} 
+            trend="Prestige" 
             isGuest={isGuest}
-            explainer={isTR ? "Ticari durum takibiniz." : "Ihre geschäftliche Statusverfolgung."}
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
-          {/* Recent Activity */}
-          <div className="lg:col-span-2 space-y-6">
-            <GlassCard className="p-8 border-foreground/5 shadow-sm relative overflow-hidden">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-black flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-primary" /> {isTR ? "Canlı Aktivite Akışı" : "Live-Aktivitätsfeed"}
-                </h3>
-                <span className="text-[10px] font-black text-foreground/20 uppercase tracking-widest italic">{isTR ? "Liderlik Hattı" : "Leader-Line"}</span>
-              </div>
-              
-              <div className={`space-y-4 transition-all duration-1000 ${isGuest ? 'blur-sm select-none pointer-events-none opacity-50' : ''}`}>
-                <ActivityItem user="Selim K." action={isTR ? "İş Planı videosunu %100 tamamladı" : "Geschäftsplan Video 100% abgeschlossen"} time="2dk önce" highlight />
-                <ActivityItem user="Merve A." action={isTR ? "Sealuxe Teknik PDF indirdi" : "Sealuxe PDF heruntergeladen"} time="15dk önce" />
-                <ActivityItem user="Ali V." action={isTR ? "Aday kayıt formunu doldurdu" : "Anmeldeformular ausgefüllt"} time="1sa önce" />
-                <ActivityItem user="Canan Y." action={isTR ? "Kanca Tekniği videosunu izledi" : "Hook-Technik Video angesehen"} time="3sa önce" />
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content Area */}
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* My Growth Stats */}
+            <section>
+              <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40 mb-4 px-2">Kendi Gelişimim</h3>
+              <MyProgressStats />
+            </section>
 
-              {isGuest && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-background/10 backdrop-blur-[2px]">
-                   <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center mb-4 border border-primary/20">
-                     <Users className="w-6 h-6 text-primary" />
-                   </div>
-                   <h4 className="font-black text-lg mb-2">{isTR ? "Ekip Dinamiğini İzleyin" : "Beobachten Sie die Teamdynamik"}</h4>
-                   <p className="text-xs text-foreground/50 max-w-[280px]">
-                     {isTR ? "Partner olduğunuzda alt ekibinizin tüm aktivitelerini ve gelişimini anlık olarak buradan takip edebileceksiniz." 
-                          : "Als Partner können Sie alle Aktivitäten und Entwicklungen Ihres Unterteams in Echtzeit verfolgen."}
-                   </p>
-                </div>
-              )}
+            {/* Reference Code Section (Only for Partners) */}
+            {!isGuest && (
+              <section>
+                <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40 mb-4 px-2">Ekibini Büyüt</h3>
+                <ReferenceCodeGenerator />
+              </section>
+            )}
 
-              {!isGuest && (
-                <Button variant="ghost" className="w-full mt-8 border border-foreground/5 text-foreground/40 font-bold text-xs uppercase tracking-widest hover:text-primary transition-colors">
-                    {isTR ? "Tümünü Görüntüle" : "Alle anzeigen"}
-                </Button>
-              )}
-            </GlassCard>
+            {/* Prospect List / Children */}
+            <section>
+               <div className="flex items-center justify-between mb-4 px-2">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40">{t("my_children")}</h3>
+                  {!isGuest && (
+                    <span className="text-[10px] font-black text-primary bg-primary/5 px-3 py-1 rounded-full border border-primary/10">
+                      TOPLAM: {children.length}
+                    </span>
+                  )}
+               </div>
+               
+               <GlassCard className={`p-6 border-foreground/5 min-h-[300px] flex flex-col ${isGuest ? 'blur-sm select-none pointer-events-none opacity-50' : ''}`}>
+                  {loadingChildren ? (
+                    <div className="flex-1 flex items-center justify-center">
+                      <Zap className="w-8 h-8 text-primary animate-spin opacity-20" />
+                    </div>
+                  ) : children.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {children.map(child => (
+                        <div 
+                          key={child.id}
+                          onClick={() => handleChildClick(child.id, child.full_name)}
+                          className="group p-4 rounded-2xl border border-gray-100 bg-white hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer"
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center font-black text-gray-400 border border-gray-100 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                                {child.full_name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-bold text-gray-900 group-hover:text-primary transition-colors">{child.full_name}</p>
+                                <p className="text-[10px] text-gray-400 font-medium">#{child.partner_id || "GUEST"}</p>
+                              </div>
+                            </div>
+                            <Info size={16} className="text-gray-200 group-hover:text-primary/30 transition-colors" />
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <MiniProgress label="Shorts" percentage={child.shorts_percentage} color="blue" />
+                            <MiniProgress label="Masterclass" percentage={child.masterclass_percentage} color="emerald" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
+                       <UserPlus className="w-12 h-12 text-gray-100 mb-4" />
+                       <p className="text-gray-400 text-sm font-medium max-w-xs">{t("no_children")}</p>
+                    </div>
+                  )}
+               </GlassCard>
+            </section>
           </div>
 
-          {/* Goals & Quick Links */}
-          <div className="space-y-6">
-            <GlassCard className="p-8 bg-primary text-white border-none shadow-xl shadow-primary/20 relative overflow-hidden group">
-              <div className={`transition-all ${isGuest ? 'blur-sm' : ''}`}>
-                <h3 className="text-lg font-black mb-2 italic">{isTR ? "Haftalık Hedef" : "Wochenziel"}</h3>
-                <p className="text-white/80 text-sm mb-6 leading-relaxed">
-                    {isTR ? "Yeni 5 partner kaydı alarak 'Elite' seviyesine yükselin." : "Erreichen Sie 'Elite', indem Sie 5 neue Partner registrieren."}
-                </p>
-                <div className="w-full bg-white/20 h-2 rounded-full mb-6 overflow-hidden">
-                    <div className="bg-white h-full w-[60%] shadow-lg" />
-                </div>
-                <Button className="w-full bg-white text-primary hover:bg-white/90 font-black rounded-xl">
-                    {isTR ? "İlerleme Detayı" : "Fortschrittsdetails"}
-                </Button>
-              </div>
+          {/* Sidebar Area */}
+          <div className="space-y-8">
+             {/* Teaser for Guests */}
+             {isGuest && (
+               <GlassCard className="p-8 bg-primary text-white border-none shadow-xl shadow-primary/20 relative overflow-hidden">
+                  <div className="relative z-10 space-y-4">
+                    <Shield className="w-10 h-10 text-white/50 mb-2" />
+                    <h3 className="text-xl font-black italic leading-tight">Tam Erişimi Aktif Et</h3>
+                    <p className="text-white/80 text-xs leading-relaxed">
+                      Partnerliğe geçerek ekibini kurmaya başla, adaylarının gelişimini takip et ve tüm kaynaklara eriş.
+                    </p>
+                    <Button variant="secondary" asChild className="w-full font-black text-primary">
+                      <a href="/auth/register">PARTNER OL</a>
+                    </Button>
+                  </div>
+                  <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+               </GlassCard>
+             )}
 
-              {isGuest && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
-                   <Lock className="w-8 h-8 text-white mb-3 opacity-40" />
-                   <p className="text-[10px] font-bold uppercase tracking-widest">
-                     {isTR ? "Hedef Takip Sistemi" : "Zielverfolgung"}
-                   </p>
-                   <p className="text-[9px] text-white/60 mt-2">
-                     {isTR ? "Partner olduğunuzda kendi hedeflerinizi buradan yöneteceksiniz." : "Verwalten Sie Ihre Ziele als Partner hier."}
-                   </p>
+             <GlassCard className="p-8 border-foreground/5 shadow-sm">
+                <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40 mb-6">Mühimmat Kısayolu</h3>
+                <div className="space-y-3">
+                   <QuickLink label="Sunum Dosyaları (PDF)" isGuest={isGuest} />
+                   <QuickLink label="Ürün Fiyat Listesi" isGuest={isGuest} />
+                   <QuickLink label="Marka Varlık Kataloğu" isGuest={isGuest} />
                 </div>
-              )}
-            </GlassCard>
+             </GlassCard>
 
-            <GlassCard className="p-8 border-foreground/5 shadow-sm">
-              <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40 mb-6">
-                {isTR ? "Mühimmat Kısayolu" : "Arsenal-Schnellzugriff"}
-              </h3>
-              <div className="space-y-3">
-                <QuickLink label={isTR ? "Sunum Dosyaları" : "Präsentationsdateien"} isGuest={isGuest} />
-                <QuickLink label={isTR ? "Yasal Evraklar" : "Rechtliche Dokumente"} isGuest={isGuest} />
-                <QuickLink label={isTR ? "Ürün Fiyat Listesi" : "Produktpreisliste"} isGuest={isGuest} />
-              </div>
-            </GlassCard>
+             <GlassCard className="p-8 border-foreground/5 shadow-sm bg-gray-50/30">
+                <div className="flex items-center gap-3 mb-4">
+                   <Clock className="w-5 h-5 text-gray-300" />
+                   <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Son Duyurular</h3>
+                </div>
+                <div className="space-y-4 opacity-40">
+                   <div className="h-3 bg-gray-200 rounded w-full" />
+                   <div className="h-3 bg-gray-200 rounded w-3/4" />
+                </div>
+             </GlassCard>
           </div>
         </div>
-
-        {/* Guest Footer CTA */}
-        {isGuest && (
-            <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-16 text-center space-y-6 max-w-2xl mx-auto"
-            >
-                <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
-                    <Shield className="w-3 h-3" /> {isTR ? "Tam Erişim Paketi" : "Vollzugriffspaket"}
-                </div>
-                <h2 className="text-3xl font-black">
-                    {isTR ? "Bu Gücü Kendi Ticaretinize Yansıtın" : "Nutzen Sie diese Kraft für Ihr Geschäft"}
-                </h2>
-                <p className="text-foreground/50 text-sm leading-relaxed">
-                    {isTR ? "Burası basit bir uygulama değil, mühimmatlarınızı, ekibinizi ve kazancınızı yönettiğiniz kontrol merkezinizdir. Hemen partner olun ve tüm özellikleri aktif edin." 
-                         : "Dies ist keine einfache App, sondern Ihr Kontrollzentrum, in dem Sie Ihr Arsenal, Ihr Team und Ihren Gewinn verwalten. Werden Sie Partner und aktivieren Sie alle Funktionen."}
-                </p>
-                <Link href="/auth/register">
-                    <Button size="lg" className="rounded-2xl px-12 py-8 text-lg font-black bg-primary text-white shadow-2xl shadow-primary/40 hover:scale-105 transition-transform">
-                        {isTR ? "HEMEN PARTNER OL VE BAŞLA" : "JETZT PARTNER WERDEN"}
-                    </Button>
-                </Link>
-            </motion.div>
-        )}
       </main>
+
+      {/* Detail Modal */}
+      <ChildDetailModal 
+        isOpen={!!selectedChild}
+        onClose={() => setSelectedChild(null)}
+        childName={selectedChild?.name || ""}
+        progress={childProgress}
+      />
     </div>
   );
 }
 
-function MomentumStat({ icon, label, value, trend, isGuest, explainer }: { icon: React.ReactNode, label: string, value: string, trend: string, isGuest: boolean, explainer: string }) {
+function MomentumStat({ icon, label, value, trend, isGuest }: any) {
   return (
     <GlassCard className="p-6 border-foreground/5 hover:border-primary/20 transition-all group overflow-hidden relative">
-      <div className={`flex items-center justify-between mb-4 ${isGuest ? 'blur-sm' : ''}`}>
+      <div className={`flex items-center justify-between mb-4 ${isGuest ? 'blur-[2px]' : ''}`}>
         <div className="p-3 bg-primary/5 rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-500">
           {icon}
         </div>
-        <span className="text-[10px] font-black text-primary px-2 py-1 bg-primary/10 rounded-lg italic">{trend}</span>
+        {!isGuest && <span className="text-[10px] font-black text-primary px-2 py-1 bg-primary/10 rounded-lg italic">{trend}</span>}
       </div>
-      <div className={`${isGuest ? 'blur-sm' : ''}`}>
+      <div className={`${isGuest ? 'blur-[2px]' : ''}`}>
         <p className="text-[10px] font-black text-foreground/30 uppercase tracking-[0.2em] mb-1">{label}</p>
         <p className="text-2xl font-black text-foreground">{value}</p>
       </div>
-
       {isGuest && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-primary/[0.02] text-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-           <p className="text-[10px] font-black text-primary leading-tight italic">{explainer}</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[1px]">
+           <Lock size={16} className="text-primary/40" />
         </div>
       )}
     </GlassCard>
   );
 }
 
-function ActivityItem({ user, action, time, highlight = false }: { user: string, action: string, time: string, highlight?: boolean }) {
+function MiniProgress({ label, percentage, color }: any) {
+  const colorClasses: any = {
+    blue: "bg-blue-500",
+    emerald: "bg-emerald-500"
+  };
   return (
-    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${highlight ? 'bg-primary/5 border-primary/20 shadow-sm' : 'border-foreground/5 hover:border-primary/10'}`}>
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-foreground/5 flex items-center justify-center text-[10px] font-black text-foreground/40 border border-foreground/5">
-          {user.split(' ').map(n => n[0]).join('')}
-        </div>
-        <div>
-          <p className="text-sm font-black text-foreground">{user}</p>
-          <p className="text-xs text-foreground/40 leading-none">{action}</p>
-        </div>
+    <div className="space-y-1">
+      <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter text-gray-400">
+        <span>{label}</span>
+        <span>{Math.round(percentage)}%</span>
       </div>
-      <span className="text-[10px] text-foreground/20 font-black uppercase tracking-tighter">{time}</span>
+      <div className="h-1 bg-gray-50 rounded-full overflow-hidden">
+        <div 
+          className={`h-full transition-all duration-1000 ${colorClasses[color]}`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
     </div>
   );
 }
 
-function QuickLink({ label, isGuest }: { label: string, isGuest: boolean }) {
+function QuickLink({ label, isGuest }: any) {
   return (
-    <div className={`flex items-center justify-between p-3 rounded-xl transition-colors group ${isGuest ? 'cursor-not-allowed opacity-50' : 'hover:bg-foreground/5 cursor-pointer'}`}>
-      <span className={`text-xs font-bold transition-colors ${isGuest ? 'text-foreground/20' : 'text-foreground/60 group-hover:text-primary'}`}>{label}</span>
-      {isGuest ? <Lock className="w-3 h-3 text-foreground/10" /> : <ArrowUpRight className="w-4 h-4 text-foreground/20 group-hover:text-primary transition-all" />}
+    <div className={`flex items-center justify-between p-4 rounded-2xl border border-gray-100 transition-all ${isGuest ? 'opacity-30 cursor-not-allowed' : 'hover:border-primary/30 hover:bg-white hover:shadow-lg cursor-pointer'}`}>
+       <span className="text-xs font-bold text-gray-600">{label}</span>
+       {isGuest ? <Lock size={12} className="text-gray-300" /> : <ArrowUpRight size={16} className="text-gray-300" />}
     </div>
   );
 }

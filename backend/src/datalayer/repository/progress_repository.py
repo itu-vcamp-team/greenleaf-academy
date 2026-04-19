@@ -115,3 +115,34 @@ class ProgressRepository:
             "total": total_count,
             "percentage": round((completed_count / total_count) * 100, 1)
         }
+
+    async def get_detailed_progress(self, tenant_id: uuid.UUID) -> List[dict]:
+        """
+        Returns a detailed list of all published contents and the user's progress for each.
+        Used for child progress drill-down.
+        """
+        # Fetch all published content for this tenant
+        content_stmt = select(AcademyContent).where(
+            AcademyContent.tenant_id == tenant_id,
+            AcademyContent.status == ContentStatus.PUBLISHED
+        ).order_by(AcademyContent.order.asc())
+        
+        contents = (await self.session.execute(content_stmt)).scalars().all()
+        
+        # Fetch all progress records for this user
+        progress_stmt = select(UserProgress).where(UserProgress.user_id == self.user_id)
+        progress_records = {p.content_id: p for p in (await self.session.execute(progress_stmt)).scalars().all()}
+        
+        results = []
+        for content in contents:
+            p = progress_records.get(content.id)
+            results.append({
+                "content_id": content.id,
+                "title": content.title,
+                "type": content.type,
+                "status": p.status if p else "not_started",
+                "percentage": p.completion_percentage if p else 0,
+                "completed_at": p.completed_at if p else None
+            })
+            
+        return results

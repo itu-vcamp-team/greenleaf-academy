@@ -18,10 +18,31 @@
     "captcha_hint": "Ekrandaki sayıların toplamını girin"
   },
   "academy": {
+    "title": "Greenleaf Akademi",
+    "subtitle": "Kendinizi geliştirin ve profesyonel ağınızı büyütün.",
     "continue_watching": "Kaldığın yerden devam et",
     "locked": "Bu içerik kilitli",
+    "locked_hint": "Önceki içeriği tamamlayarak bu içeriğin kilidini aç.",
     "completed": "Tamamlandı",
     "mark_complete": "Tamamlandı Olarak İşaretle",
-    "search_placeholder": "İçerik ara..."
+    "search_placeholder": "İçerik ara... (başlık, açıklama)",
+    "loading": "Aranıyor...",
+    "no_results": "için sonuç bulunamadı.",
+    "generate_new_code": "Yeni Kod Üret",
+    "generating": "Üretiliyor...",
+    "invite_code": "Davetiye Kodu",
+    "invite_code_hint": "Aday listene yeni birini eklemek için tek kullanımlık bir referans kodu oluştur.",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı!",
+    "one_time_code_warning": "Bu kod yalnızca bir kez kullanılabilir.",
+    "my_children": "Adaylarım",
+    "no_children": "Henüz davet ettiğin kimse yok. Momentum vizyonunu paylaşarak ekibini kurmaya başla!",
+    "view_details": "Detayları Gör",
+    "back_to_dashboard": "Panele Dön",
+    "back_to_list": "Listeye Dön",
+    "view_resource": "Kaynak Dosyasını Görüntüle",
+    "watching": "İzleniyor...",
+    "add_favorite": "Favorilerime Ekle",
+    "progress": "İlerleme"
   }
 }

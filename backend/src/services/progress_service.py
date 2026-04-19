@@ -43,3 +43,7 @@ class ProgressService:
     async def get_stats(self, tenant_id: uuid.UUID, content_type: Optional[str] = None) -> dict:
         """Retrieves statistics for the user dashboard."""
         return await self.repo.get_stats(tenant_id, content_type)
+
+    async def get_detailed_stats(self, tenant_id: uuid.UUID) -> List[dict]:
+        """Retrieves detailed per-content statistics for child drill-down."""
+        return await self.repo.get_detailed_progress(tenant_id)
