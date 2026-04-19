@@ -1,0 +1,61 @@
+# Render infrastructure-as-code configuration
+services:
+  # --- BACKEND ---
+  - type: web
+    name: greenleaf-backend
+    runtime: python
+    repo: https://github.com/your-repo/greenleaf-website
+    branch: main
+    rootDir: greenleaf-academy/backend
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
+    startCommand: uvicorn src.app:app --host 0.0.0.0 --port 10000
+    plan: professional
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_SECRET_KEY
+        sync: false   # Set manually in Render dashboard
+      - key: DATABASE_URL
+        fromDatabase:
+          name: greenleaf-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: greenleaf-redis
+          type: redis
+          property: connectionString
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://tr.greenleafakademi.com
+    disk:
+      name: uploads
+      mountPath: /var/data/uploads
+      sizeGB: 5
+
+  # --- FRONTEND ---
+  - type: web
+    name: greenleaf-frontend
+    runtime: node
+    repo: https://github.com/your-repo/greenleaf-website
+    branch: main
+    rootDir: greenleaf-academy/frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    plan: professional
+    envVars:
+      - key: NEXT_PUBLIC_BACKEND_URL
+        value: https://greenleaf-backend.onrender.com
+
+  # --- DATABASE ---
+  - type: pserv
+    name: greenleaf-postgres
+    databaseName: greenleaf_db
+    databaseUser: greenleaf
+    plan: professional
+
+  # --- REDIS ---
+  - type: redis
+    name: greenleaf-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
