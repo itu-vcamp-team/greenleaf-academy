@@ -69,3 +69,22 @@ class LoginResponseSchema(BaseModel):
     temp_token: Optional[str] = None
     tokens: Optional[TokenResponseSchema] = None
     user_id: Optional[uuid.UUID] = None
+
+
+# --- PASSWORD RESET SCHEMAS ---
+
+class ForgotPasswordSchema(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordSchema(BaseModel):
+    user_id: uuid.UUID
+    code: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long.")
+        return v

@@ -15,12 +15,13 @@ from src.datalayer.model.db.reference_code import ReferenceCode
 from src.datalayer.model.dto.auth_dto import (
     RegisterStep1Schema, RegisterStep2Schema, RegisterStep3Schema,
     LoginSchema, LoginResponseSchema, TokenResponseSchema,
-    VerifyEmailSchema, Verify2FASchema, RefreshTokenSchema
+    VerifyEmailSchema, Verify2FASchema, RefreshTokenSchema,
+    ForgotPasswordSchema, ResetPasswordSchema
 )
 from src.services import (
-    password_service, token_service, captcha_service, 
-    otp_service, greenleaf_global_service, session_service,
-    mailing_service
+    PasswordService, TokenService, CaptchaService, 
+    OTPService, GreenleafGlobalService, SessionService,
+    MailingService
 )
 from src.config import get_settings
 from src.logger import logger
@@ -36,7 +37,7 @@ async def get_captcha():
     Returns 4 random numbers and a session_key for login captcha.
     """
     session_key = str(uuid.uuid4())
-    numbers = await captcha_service.generate_login_captcha(session_key)
+    numbers = await CaptchaService.generate_login_captcha(session_key)
     return {"session_key": session_key, "numbers": numbers}
 
 
@@ -48,16 +49,13 @@ async def register_step1(data: RegisterStep1Schema):
     Step 1: Basic user info.
     Stores data in Redis temporarily.
     """
-    # Note: In a real app, check if email/username exists in DB here too.
     session_id = str(uuid.uuid4())
     temp_data = data.model_dump()
-    # Password hashing should ideally happen here or at DB write.
-    # We'll hash it now to keep it secure in Redis.
-    temp_data["password_hash"] = password_service.hash_password(data.password)
+    temp_data["password_hash"] = PasswordService.hash_password(data.password)
     del temp_data["password"]
 
     r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
-    await r.setex(f"reg_temp:{session_id}", 1800, json.dumps(temp_data)) # 30 min TTL
+    await r.setex(f"reg_temp:{session_id}", 1800, json.dumps(temp_data))
     await r.aclose()
 
     return {"session_id": session_id}
@@ -68,7 +66,7 @@ async def register_step2(data: RegisterStep2Schema):
     """
     Step 2: External Greenleaf Global verification.
     """
-    verified = await greenleaf_global_service.verify_greenleaf_global_credentials(
+    verified = await GreenleafGlobalService.verify_greenleaf_global_credentials(
         data.gl_username, data.gl_password
     )
     if not verified:
@@ -77,7 +75,6 @@ async def register_step2(data: RegisterStep2Schema):
             detail="Greenleaf Global credentials could not be verified."
         )
     
-    # Update Redis data
     r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
     stored = await r.get(f"reg_temp:{data.session_id}")
     if not stored:
@@ -115,12 +112,10 @@ async def register_step3(
         await r.aclose()
         raise HTTPException(status_code=400, detail="Greenleaf Global verification missing.")
 
-    # Multi-tenancy context
     tenant_id = getattr(request.state, "tenant_id", None)
     if not tenant_id:
          raise HTTPException(status_code=400, detail="Tenant context missing.")
 
-    # Handle reference code or waitlist
     is_active = False
     inviter_id = None
     
@@ -128,7 +123,6 @@ async def register_step3(
         if not data.reference_code:
             raise HTTPException(status_code=400, detail="Reference code required.")
         
-        # Verify reference code
         stmt = select(ReferenceCode).where(ReferenceCode.code == data.reference_code, ReferenceCode.is_used == False)
         res = await db.execute(stmt)
         ref = res.scalar_one_or_none()
@@ -140,14 +134,24 @@ async def register_step3(
         ref.is_used = True
         ref.used_at = datetime.now(timezone.utc)
         
-        # Auto-approve in development as requested
         if settings.APP_ENV == "development":
             is_active = True
     else:
-         # User chose "No Partner ID" -> goes to waitlist (which means pending approval)
-         pass
+        # User chose "No Partner ID" -> goes to waitlist
+        # Notify Admins via Background Tasks
+        stmt_admins = select(User.email).where(User.role.in_([UserRole.ADMIN, UserRole.SUPERADMIN]))
+        res_admins = await db.execute(stmt_admins)
+        admin_emails = [row[0] for row in res_admins.all()]
+        
+        if admin_emails:
+            background_tasks.add_task(
+                MailingService.send_waitlist_notification_to_admin,
+                admin_emails=admin_emails,
+                applicant_name=temp_data["full_name"],
+                applicant_email=temp_data["email"],
+                supervisor_name=data.supervisor_name
+            )
 
-    # Create User
     new_user = User(
         id=uuid.uuid4(),
         tenant_id=tenant_id,
@@ -156,9 +160,9 @@ async def register_step3(
         full_name=temp_data["full_name"],
         phone=temp_data.get("phone"),
         password_hash=temp_data["password_hash"],
-        role=UserRole.PARTNER, # Default role
+        role=UserRole.PARTNER,
         is_active=is_active,
-        is_verified=False, # Needs OTP
+        is_verified=False,
         inviter_id=inviter_id,
         consent_given_at=datetime.now(timezone.utc),
         consent_ip=request.client.host if request.client else None,
@@ -170,12 +174,9 @@ async def register_step3(
     await r.delete(f"reg_temp:{data.session_id}")
     await r.aclose()
 
-    # Generate OTP for email verification
-    otp = await otp_service.generate_otp(str(new_user.id))
-    
-    # Send Activation Email via Background Tasks
+    otp = await OTPService.generate_otp(str(new_user.id))
     background_tasks.add_task(
-        mailing_service.send_activation_email,
+        MailingService.send_activation_email,
         to_email=new_user.email,
         code=otp,
         full_name=new_user.full_name
@@ -196,7 +197,7 @@ async def login(
     db: AsyncSession = Depends(get_db_session)
 ):
     # 1. Verify CAPTCHA
-    if not await captcha_service.verify_login_captcha(data.session_key, data.captcha_answer):
+    if not await CaptchaService.verify_login_captcha(data.session_key, data.captcha_answer):
         raise HTTPException(status_code=400, detail="Invalid CAPTCHA answer.")
 
     # 2. Find User
@@ -204,7 +205,7 @@ async def login(
     res = await db.execute(stmt)
     user = res.scalar_one_or_none()
 
-    if not user or not password_service.verify_password(data.password, user.password_hash):
+    if not user or not PasswordService.verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid username or password.")
 
     if not user.is_active:
@@ -217,17 +218,14 @@ async def login(
         requires_2fa = True
 
     if requires_2fa:
-        otp = await otp_service.generate_otp(str(user.id))
-        
-        # Send 2FA Email via Background Tasks
+        otp = await OTPService.generate_otp(str(user.id))
         background_tasks.add_task(
-            mailing_service.send_monthly_2fa_email,
+            MailingService.send_monthly_2fa_email,
             to_email=user.email,
             code=otp,
             full_name=user.full_name
         )
         
-        # Generate a temporary token to track this login attempt
         temp_token = str(uuid.uuid4())
         r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
         await r.setex(f"login_2fa:{temp_token}", 300, str(user.id))
@@ -236,15 +234,15 @@ async def login(
         return LoginResponseSchema(requires_2fa=True, temp_token=temp_token, user_id=user.id)
 
     # 4. Success -> Create Session (Kick-out happens here)
-    jti = await session_service.create_session(
+    jti = await SessionService.create_session(
         db, user.id, 
         ip_address=request.client.host if request.client else None,
         device_info=request.headers.get("user-agent")
     )
     await db.commit()
 
-    access_token = token_service.create_access_token(str(user.id), user.role.value, str(user.tenant_id), jti)
-    refresh_token = token_service.create_refresh_token(str(user.id), jti)
+    access_token = TokenService.create_access_token(str(user.id), user.role.value, str(user.tenant_id), jti)
+    refresh_token = TokenService.create_refresh_token(str(user.id), jti)
 
     return LoginResponseSchema(
         tokens=TokenResponseSchema(access_token=access_token, refresh_token=refresh_token)
@@ -264,28 +262,73 @@ async def verify_2fa(
         await r.aclose()
         raise HTTPException(status_code=400, detail="Invalid or expired 2FA session.")
 
-    if not await otp_service.verify_otp(str(data.user_id), data.code):
+    if not await OTPService.verify_otp(str(data.user_id), data.code):
         await r.aclose()
         raise HTTPException(status_code=400, detail="Invalid OTP code.")
 
-    # Success
     await r.delete(f"login_2fa:{data.temp_token}")
     await r.aclose()
 
-    # Update last_2fa_at
     stmt = select(User).where(User.id == data.user_id)
     res = await db.execute(stmt)
     user = res.scalar_one()
     user.last_2fa_at = datetime.now(timezone.utc)
 
-    jti = await session_service.create_session(
+    jti = await SessionService.create_session(
         db, user.id, 
         ip_address=request.client.host if request.client else None,
         device_info=request.headers.get("user-agent")
     )
     await db.commit()
 
-    access_token = token_service.create_access_token(str(user.id), user.role.value, str(user.tenant_id), jti)
-    refresh_token = token_service.create_refresh_token(str(user.id), jti)
+    access_token = TokenService.create_access_token(str(user.id), user.role.value, str(user.tenant_id), jti)
+    refresh_token = TokenService.create_refresh_token(str(user.id), jti)
 
     return TokenResponseSchema(access_token=access_token, refresh_token=refresh_token)
+
+
+# --- PASSWORD RESET FLOW ---
+
+@router.post("/forgot-password")
+async def forgot_password(
+    email: str, # Usually from a simple schema, but doing it directly for now
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Triggers password reset OTP via email."""
+    stmt = select(User).where(User.email == email)
+    res = await db.execute(stmt)
+    user = res.scalar_one_or_none()
+    
+    if not user:
+        # Don't reveal if user exists for security, just return success
+        return {"message": "If this email is registered, you will receive a reset code."}
+    
+    otp = await OTPService.generate_otp(str(user.id), purpose="password_reset")
+    background_tasks.add_task(
+        MailingService.send_password_reset_email,
+        to_email=user.email,
+        code=otp,
+        full_name=user.full_name
+    )
+    
+    return {"message": "Reset code sent to your email."}
+
+
+@router.post("/reset-password")
+async def reset_password(
+    data: ResetPasswordSchema,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Verifies OTP and resets password."""
+    if not await OTPService.verify_otp(str(data.user_id), data.code, purpose="password_reset"):
+        raise HTTPException(status_code=400, detail="Invalid or expired reset code.")
+    
+    stmt = select(User).where(User.id == data.user_id)
+    res = await db.execute(stmt)
+    user = res.scalar_one()
+    
+    user.password_hash = PasswordService.hash_password(data.new_password)
+    await db.commit()
+    
+    return {"message": "Password reset successfully."}
