@@ -569,6 +569,13 @@ Güvenlik ve Deployment altyapısı Nesne Yönelimli (OO) ve modern standartlard
 - **DevOps:** GitHub Actions ve Render.yaml ile CI/CD altyapısı hazırlandı.
 - **Doğrulama:** Brute-force koruması ve güvenlik başlıklarının varlığı test edildi.
 
+### 🛠️ Frontend Build Fixes (2026-04-19)
+Render.com deploy sürecini engelleyen TypeScript hataları giderildi:
+- **Button Component:** `asChild` prop desteği olmayan `Button` bileşenindeki hatalı kullanımlar kaldırıldı. Bunun yerine standart Next.js `Link` sarmalayıcıları kullanılarak component mimarisiyle uyum sağlandı.
+- **Tenant Context Sync:** `page.tsx` dosyasında eksik/yanlış olan `tenant` destructuring hatası, context yapısıyla (`activeTenant`) uyumlu hale getirilerek düzeltildi.
+- **GlassCard Optimization:** React'ın framer-motion prop'larını (whileInView vb.) standart DOM elementlerine geçirmesiyle oluşan konsol uyarıları, prop-spreading mantığıyla giderildi.
+- **Build Verification:** Yerel ortamda `npm run build` komutuyla tüm sayfa ve bileşenlerin hatasız derlendiği doğrulandı.
+
 ## 📝 Implementation Summary (2026-04-19 - Render Build Fix)
 
 Render.com üzerinde alınan Python 3.14 ve Pillow 10.2.0 uyumsuzluğu kaynaklı build hatası giderildi:
