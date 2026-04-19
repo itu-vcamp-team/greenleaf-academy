@@ -31,8 +31,8 @@ Referans: [`roadmap/overview.md`](../roadmap/overview.md)
 | 3 | Multi-tenancy middleware, subdomain çözümleme, Redis cache | ✅ Tamamlandı | [Ayrıntılar](tasks_claude/task3_multi_tenancy_logic.md) - Subdomain tabanlı tenant çözümleme, Redis cache ve otomatik repo filtreleme tamamlandı. |
 | 4 | Auth sistemi: 3 adımlı kayıt, GL Global doğrulama, 2FA, kick-out | ✅ Tamamlandı | [Ayrıntılar](tasks_claude/task4_auth_system.md) - JWT + 2FA + GL Global + Kick-out tamamlandı. |
 | 5 | Frontend kurulumu: Next.js 15, i18n, tenant tema, mobil nav | ✅ Tamamlandı | [Ayrıntılar](tasks_claude/task5_frontend_setup.md) - Next.js 15 + i18n + Tenant Theme + Zustand kuruldu. |
-| 9 | Mailing servisi: Resend, 8 mail şablonu, broadcast | ⬜ Bekliyor | [`task9_mailing_service.md`](tasks_claude/task9_mailing_service.md) |
-| 12 | Güvenlik: Rate limit middleware, CSP/HSTS header'ları, GitHub Actions, Render deploy | ⬜ Bekliyor | [`task12_security_deployment.md`](tasks_claude/task12_security_deployment.md) |
+| 9 | Mailing servisi: Resend, 8 mail şablonu, broadcast | ✅ Tamamlandı | [Ayrıntılar](tasks_claude/task9_mailing_service.md) - 8 Şablon + Resend + BackgroundTasks + OO Refactor tamamlandı. |
+| 12 | Güvenlik: Rate limit middleware, CSP/HSTS header'ları, GitHub Actions, Render deploy | ✅ Tamamlandı | [Ayrıntılar](tasks_claude/task12_security_deployment.md) - Redis Rate Limit + Security Headers + CI/CD + CleanupService tamamlandı. |
 
 ### Human (Gaffar) Görevleri
 
@@ -106,7 +106,7 @@ Referans: [`roadmap/overview.md`](../roadmap/overview.md)
 | Faz | Toplam Görev | Tamamlanan | Durum |
 |-----|-------------|------------|-------|
 | Ön Hazırlık | 5 | 5 | ✅ Tamamlandı |
-| Faz 1 – Altyapı | 9 (7 Claude + 2 Human) | 5 | 🚧 Devam Ediyor |
+| Faz 1 – Altyapı | 9 (7 Claude + 2 Human) | 9 | ✅ Tamamlandı |
 | Faz 2 – Akademi | 6 (5 Claude + 1 Human) | 0 | ⬜ Başlanmadı |
 | Canlıya Geçiş | 2 (Human) | 0 | ⬜ Başlanmadı |
 | Faz 3 – Global | Planlanacak | — | 📋 Planlandı |
