@@ -1,28 +1,25 @@
 import uuid
 from typing import Optional
 from datetime import datetime
-from sqlmodel import Field
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, ForeignKey, DateTime
 from src.datalayer.model.db.base import BaseModel
 
 
-class ReferenceCode(BaseModel, table=True):
+class ReferenceCode(BaseModel):
     __tablename__ = "reference_codes"
 
-    tenant_id: uuid.UUID = Field(foreign_key="tenants.id", index=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"), index=True)
 
-    code: str = Field(unique=True, index=True, max_length=20)
-    # Admin'in oluşturduğu tek seferlik davetiye kodu. Örn: "GL-TR-A7X2"
+    code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
+    # Admin created one-time invitation code. e.g. "GL-TR-A7X2"
 
-    created_by: uuid.UUID = Field(foreign_key="users.id")
-    # Kodu oluşturan partnerin user.id'si
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # user.id of the partner who created the code
 
-    is_used: bool = Field(default=False)
-    # Kullanıldı mı? True olduktan sonra bir daha kullanılamaz.
+    is_used: Mapped[bool] = mapped_column(default=False)
 
-    used_by: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id")
-    # Kodu kullanan kullanıcının user.id'si
+    used_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"), default=None)
+    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
 
-    used_at: Optional[datetime] = Field(default=None)
-
-    expires_at: Optional[datetime] = Field(default=None)
-    # None ise süresiz geçerli.
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)

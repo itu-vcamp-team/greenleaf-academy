@@ -2,7 +2,8 @@ import uuid
 from typing import Optional
 from datetime import datetime
 from enum import Enum
-from sqlmodel import Field
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, ForeignKey, Enum as SQLEnum, DateTime
 from src.datalayer.model.db.base import BaseModel
 
 
@@ -14,35 +15,28 @@ class EventCategory(str, Enum):
 
 
 class EventVisibility(str, Enum):
-    ALL = "ALL"          # Misafirler de görebilir
-    PARTNER_ONLY = "PARTNER_ONLY"  # Sadece partnerler görebilir
+    ALL = "ALL"
+    PARTNER_ONLY = "PARTNER_ONLY"
 
 
-class Event(BaseModel, table=True):
+class Event(BaseModel):
     __tablename__ = "events"
 
-    tenant_id: uuid.UUID = Field(foreign_key="tenants.id", index=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"), index=True)
 
-    title: str = Field(max_length=200)
-    description: Optional[str] = Field(default=None, max_length=3000)
+    title: Mapped[str] = mapped_column(String(200))
+    description: Mapped[Optional[str]] = mapped_column(String(3000), default=None)
 
-    category: EventCategory
+    category: Mapped[EventCategory] = mapped_column(SQLEnum(EventCategory))
 
-    start_time: datetime = Field(index=True)
-    end_time: Optional[datetime] = Field(default=None)
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    end_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
 
-    meeting_link: Optional[str] = Field(default=None, max_length=500)
-    # Zoom, Google Meet, Teams vb. bağlantı linki.
+    meeting_link: Mapped[Optional[str]] = mapped_column(String(500), default=None)
+    location: Mapped[Optional[str]] = mapped_column(String(300), default=None)
 
-    location: Optional[str] = Field(default=None, max_length=300)
-    # Fiziksel etkinlik adresi.
+    cover_image_path: Mapped[Optional[str]] = mapped_column(String(500), default=None)
+    contact_info: Mapped[Optional[str]] = mapped_column(String(500), default=None)
 
-    cover_image_path: Optional[str] = Field(default=None, max_length=500)
-    # Render disk'e kaydedilen WebP kapak görseli yolu.
-
-    contact_info: Optional[str] = Field(default=None, max_length=500)
-    # Davetiye için iletişim notu.
-
-    visibility: EventVisibility = Field(default=EventVisibility.PARTNER_ONLY)
-
-    is_published: bool = Field(default=False)
+    visibility: Mapped[EventVisibility] = mapped_column(SQLEnum(EventVisibility), default=EventVisibility.PARTNER_ONLY)
+    is_published: Mapped[bool] = mapped_column(default=False)

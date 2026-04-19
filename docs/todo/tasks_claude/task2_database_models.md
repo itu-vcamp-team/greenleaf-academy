@@ -1,56 +1,49 @@
-# Task 2: Veritabanı Modelleri ve Migration
+# Task 2: Veritabanı Modelleri, DTO ve Repository (Tamamlandı)
 
 ## 🎯 Hedef
-SQLModel kullanarak tüm veritabanı tablolarını `backend/src/datalayer/model/db/` altında tanımlamak, Alembic ile migration sistemini kurmak ve ilk `initial` migration dosyasını oluşturmak.
+SQLAlchemy 2.0 kullanarak tüm veritabanı tablolarını `backend/src/datalayer/model/db/` altında tanımlamak, Pydantic DTO'larını ve sade Mapper'larını oluşturmak, Repository pattern'i kurmak ve Alembic ile ilk migration'ı gerçekleştirmek.
 
 ## ⚠️ Ön Koşullar
-- Task 1 tamamlanmış, `datalayer/database.py` hazır olmalı
-- `docker-compose up` ile Postgres ayakta olmalı
+- Task 1 tamamlanmış
+- Docker Postgres ayakta
 
 ---
 
-## 🧠 Modellere Genel Bakış
+## 🏗️ Mimari Yapı
 
-Aşağıdaki tablolar oluşturulacak (bağımlılık sırasına göre):
+### 1. DB Modelleri (`src/datalayer/model/db/`)
+SQLAlchemy 2.0 type-safe `Mapped` syntax'ı kullanıldı. `BaseModel` üzerinden `id`, `created_at` ve `updated_at` alanları standartlaştırıldı.
 
-```
-Tenant
-  └─► User (tenant_id FK)
-        └─► ReferenceCode (created_by FK)
-        └─► UserSession (user_id FK)
-        └─► UserProgress (user_id FK)
-        └─► Favorite (user_id FK)
-  └─► AcademyContent (tenant_id FK)
-        └─► UserProgress (content_id FK)
-        └─► Favorite (content_id FK)
-  └─► Event (tenant_id FK)
-  └─► Announcement (tenant_id FK)
-  └─► ResourceLink (tenant_id FK)
-  └─► Waitlist (tenant_id FK)
-  └─► AuditLog (actor_id FK)
+### 2. DTO'lar (`src/datalayer/model/dto/`)
+Pydantic V2 şemaları (`TenantResponse`, `UserCreate` vb.) kullanılarak API validation sağlandı. `model_config = ConfigDict(from_attributes=True)` ile DB objelerinden otomatik dönüşüm desteği eklendi.
+
+### 3. Mapper'lar (`src/datalayer/mapper/`)
+Statik metodlar içeren sade sınıflar (`UserMapper`, `TenantMapper`). DB modelleri ile DTO'lar arasında "junior dostu" dönüşüm sağlar.
+
+### 4. Repository'ler (`src/datalayer/repository/`)
+`AsyncBaseRepository` üzerinden türetilen spesifik repository'ler (`UserRepository`, `TenantRepository` vb.). Business Logic'i veri erişiminden izole eder.
+
+---
+
+## 🗃️ Alembic Migration
+
+Alembic ayarları async destekli hale getirildi. Migration'lar Docker konteyneri içinden yönetilir.
+
+```bash
+# Migration oluşturma (Docker içinden)
+docker exec backend-backend-1 alembic revision --autogenerate -m "initial_schema"
+
+# Migration uygulama
+docker exec backend-backend-1 alembic upgrade head
 ```
 
 ---
 
-## 📄 Adım 1: `src/datalayer/model/db/base.py` – Temel Model
-
-Tüm modeller bu base sınıfını miras alır:
-
-```python
-import uuid
-from datetime import datetime, timezone
-from sqlmodel import Field, SQLModel
-
-
-def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-class BaseModel(SQLModel):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    created_at: datetime = Field(default_factory=utcnow)
-    updated_at: datetime = Field(default_factory=utcnow)
-```
+## ✅ Kabul Kriterleri
+- [x] Tüm 13 tablo (`tenants`, `users`, `events` vb.) DB'de oluşturuldu.
+- [x] SQLAlchemy 2.0 Mapped syntax'ı uygulandı.
+- [x] Repository pattern entegrasyonu tamamlandı.
+- [x] İlk migration (`initial_schema`) hatasız çalıştı.
 
 ---
 

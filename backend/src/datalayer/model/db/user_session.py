@@ -1,27 +1,24 @@
 import uuid
 from typing import Optional
 from datetime import datetime
-from sqlmodel import Field
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, ForeignKey, DateTime
 from src.datalayer.model.db.base import BaseModel
 
 
-class UserSession(BaseModel, table=True):
+class UserSession(BaseModel):
     __tablename__ = "user_sessions"
 
-    user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
 
-    token_jti: str = Field(unique=True, index=True, max_length=100)
-    # JWT'nin "jti" (JWT ID) claim'i. Her token için benzersiz ID.
+    token_jti: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    # JWT ID (jti) claim.
 
-    is_active: bool = Field(default=True)
-    # Yeni bir oturum açıldığında eski oturumun is_active'i False yapılır (kick-out).
+    is_active: Mapped[bool] = mapped_column(default=True)
+    # Set to False when a new session is created (kick-out).
 
-    device_info: Optional[str] = Field(default=None, max_length=300)
-    # Kullanıcının cihaz bilgisi (user-agent).
+    device_info: Mapped[Optional[str]] = mapped_column(String(300), default=None)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), default=None)
 
-    ip_address: Optional[str] = Field(default=None, max_length=45)
-
-    expires_at: datetime = Field()
-    # Token'ın geçerlilik süresi.
-
-    last_used_at: Optional[datetime] = Field(default=None)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)

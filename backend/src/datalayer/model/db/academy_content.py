@@ -1,53 +1,41 @@
 import uuid
 from typing import Optional
 from enum import Enum
-from sqlmodel import Field
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, ForeignKey, Enum as SQLEnum
 from src.datalayer.model.db.base import BaseModel
 
 
 class ContentType(str, Enum):
-    SHORT = "SHORT"        # Kısa dikey format video (eski adı: Reels)
-    MASTERCLASS = "MASTERCLASS"  # Uzun format eğitim videosu
+    SHORT = "SHORT"
+    MASTERCLASS = "MASTERCLASS"
 
 
 class ContentStatus(str, Enum):
-    PUBLISHED = "PUBLISHED"  # Yayında; partner ve editor görebilir
-    DRAFT = "DRAFT"          # Taslak; sadece admin/editor görebilir
+    PUBLISHED = "PUBLISHED"
+    DRAFT = "DRAFT"
 
 
-class AcademyContent(BaseModel, table=True):
+class AcademyContent(BaseModel):
     __tablename__ = "academy_contents"
 
-    tenant_id: uuid.UUID = Field(foreign_key="tenants.id", index=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"), index=True)
 
-    type: ContentType
+    type: Mapped[ContentType] = mapped_column(SQLEnum(ContentType))
+    locale: Mapped[str] = mapped_column(String(5), index=True)
+    # e.g. "tr", "en", "de"
 
-    locale: str = Field(max_length=5, index=True)
-    # Dil kodu. Örn: "tr", "en", "de"
+    title: Mapped[str] = mapped_column(String(200))
+    description: Mapped[Optional[str]] = mapped_column(String(2000), default=None)
 
-    title: str = Field(max_length=200)
+    video_url: Mapped[str] = mapped_column(String(500))
+    resource_link: Mapped[Optional[str]] = mapped_column(String(500), default=None)
+    resource_link_label: Mapped[Optional[str]] = mapped_column(String(100), default=None)
 
-    description: Optional[str] = Field(default=None, max_length=2000)
+    order: Mapped[int] = mapped_column(default=0, index=True)
+    status: Mapped[ContentStatus] = mapped_column(SQLEnum(ContentStatus), default=ContentStatus.DRAFT)
 
-    video_url: str = Field(max_length=500)
-    # YouTube "liste dışı" video URL'si.
+    prerequisite_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("academy_contents.id"), default=None)
+    is_new: Mapped[bool] = mapped_column(default=True)
 
-    resource_link: Optional[str] = Field(default=None, max_length=500)
-    # Google Drive döküman linki (PDF, sunum vb.).
-
-    resource_link_label: Optional[str] = Field(default=None, max_length=100)
-    # Buton etiketi.
-
-    order: int = Field(default=0, index=True)
-    # Aynı tenant + locale + type içindeki sıralama.
-
-    status: ContentStatus = Field(default=ContentStatus.DRAFT)
-
-    prerequisite_id: Optional[uuid.UUID] = Field(default=None, foreign_key="academy_contents.id")
-    # Bu içeriğin kilidini açmak için önce hangi içeriğin tamamlanması gerektiği.
-
-    is_new: bool = Field(default=True)
-    # İçerik ilk eklendiğinde True.
-
-    thumbnail_url: Optional[str] = Field(default=None, max_length=500)
-    # YouTube otomatik thumbnail URL'si.
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(String(500), default=None)

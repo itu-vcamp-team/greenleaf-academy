@@ -1,13 +1,33 @@
 import uuid
 from datetime import datetime, timezone
-from sqlmodel import Field, SQLModel
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, text
+from src.datalayer.database import Base
 
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-class BaseModel(SQLModel):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    created_at: datetime = Field(default_factory=utcnow)
-    updated_at: datetime = Field(default_factory=utcnow)
+class BaseModel(Base):
+    """Abstract base model for all tables to inherit from"""
+    __abstract__ = True
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, 
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
+    )
+    
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), 
+        default=utcnow,
+        server_default=text("now()")
+    )
+    
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), 
+        default=utcnow,
+        server_default=text("now()"),
+        onupdate=utcnow
+    )

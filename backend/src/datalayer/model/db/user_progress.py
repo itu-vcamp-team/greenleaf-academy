@@ -1,31 +1,24 @@
 import uuid
 from typing import Optional
 from datetime import datetime
-from sqlmodel import Field, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, ForeignKey, DateTime, UniqueConstraint
 from src.datalayer.model.db.base import BaseModel
 
 
-class UserProgress(BaseModel, table=True):
+class UserProgress(BaseModel):
     __tablename__ = "user_progress"
     __table_args__ = (
         UniqueConstraint("user_id", "content_id", name="uq_user_content"),
     )
-    # Bir kullanıcı, bir içerik için sadece bir UserProgress kaydına sahip olabilir.
 
-    user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
-    content_id: uuid.UUID = Field(foreign_key="academy_contents.id", index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    content_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("academy_contents.id"), index=True)
 
-    status: str = Field(default="not_started", max_length=20)
+    status: Mapped[str] = mapped_column(String(20), default="not_started")
     # "not_started" | "in_progress" | "completed"
 
-    completion_percentage: float = Field(default=0.0)
-    # 0.0 - 100.0 arası. YouTube IFrame API'den gelen izlenme yüzdesi.
-
-    last_watched_at: Optional[datetime] = Field(default=None)
-    # En son videoyu izlediği tarih/saat.
-
-    last_position_seconds: Optional[float] = Field(default=None)
-    # Videonun en son kaldığı saniye. "Kaldığın yerden devam et" için kullanılır.
-
-    completed_at: Optional[datetime] = Field(default=None)
-    # status "completed" olduğunda otomatik set edilir.
+    completion_percentage: Mapped[float] = mapped_column(default=0.0)
+    last_watched_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
+    last_position_seconds: Mapped[Optional[float]] = mapped_column(default=None)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)

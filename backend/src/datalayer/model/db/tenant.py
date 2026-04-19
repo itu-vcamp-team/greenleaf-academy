@@ -1,19 +1,19 @@
 from typing import Optional
-from sqlmodel import Field, Column
-from sqlalchemy import JSON
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, JSON
 from src.datalayer.model.db.base import BaseModel
 
 
-class Tenant(BaseModel, table=True):
+class Tenant(BaseModel):
     __tablename__ = "tenants"
 
-    slug: str = Field(unique=True, index=True, max_length=10)
-    # Örnek slug değerleri: "tr", "de", "fr"
+    slug: Mapped[str] = mapped_column(String(10), unique=True, index=True)
+    # Example slugs: "tr", "de", "fr"
 
-    name: str = Field(max_length=100)
-    # Örnek: "Greenleaf Türkiye"
+    name: Mapped[str] = mapped_column(String(100))
+    # Example: "Greenleaf Türkiye"
 
-    is_active: bool = Field(default=True)
+    is_active: Mapped[bool] = mapped_column(default=True)
 
-    config: Optional[dict] = Field(default={}, sa_column=Column(JSON))
-    # config içeriği: logo_url, colors, support_links, social_media, etc.
+    config: Mapped[Optional[dict]] = mapped_column(JSON, default={})
+    # config content: logo_url, colors, support_links, social_media, etc.

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlmodel import SQLModel
+from sqlalchemy.orm import DeclarativeBase
 from src.config import get_settings
 
 settings = get_settings()
@@ -18,6 +18,11 @@ AsyncSessionFactory = async_sessionmaker(
 )
 
 
+class Base(DeclarativeBase):
+    """Standard SQLAlchemy Declarative Base"""
+    pass
+
+
 async def get_db_session() -> AsyncSession:
     """FastAPI Depends ile kullanılacak session generator."""
     async with AsyncSessionFactory() as session:
@@ -34,4 +39,4 @@ async def get_db_session() -> AsyncSession:
 async def create_tables():
     """Sadece development ortamında tüm tabloları oluşturur. Prod'da Alembic kullan."""
     async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)

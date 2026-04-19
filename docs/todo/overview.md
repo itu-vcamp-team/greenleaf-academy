@@ -27,7 +27,7 @@ Referans: [`roadmap/overview.md`](../roadmap/overview.md)
 | # | Görev | Durum | Detay |
 |---|-------|-------|-------|
 | 1 | Backend proje kurulumu (FastAPI, Docker, config, health check) | ✅ Tamamlandı | [Ayrıntılar](tasks_claude/task1_backend_setup.md) - FastAPI + Docker + SQLModel altyapısı kuruldu. |
-| 2 | Veritabanı modelleri ve Alembic migration (13 model) | ⬜ Bekliyor | [`task2_database_models.md`](tasks_claude/task2_database_models.md) |
+| 2 | Veritabanı modelleri ve Alembic migration (13 model) | ✅ Tamamlandı | [Ayrıntılar](tasks_claude/task2_database_models.md) - SQLAlchemy 2.0, Pydantic DTO, Repository ve Alembic kurulumu tamamlandı. |
 | 3 | Multi-tenancy middleware, subdomain çözümleme, Redis cache | ⬜ Bekliyor | [`task3_multi_tenancy_logic.md`](tasks_claude/task3_multi_tenancy_logic.md) |
 | 4 | Auth sistemi: 3 adımlı kayıt, GL Global doğrulama, 2FA, kick-out | ⬜ Bekliyor | [`task4_auth_system.md`](tasks_claude/task4_auth_system.md) |
 | 5 | Frontend kurulumu: Next.js 15, i18n, tenant tema, mobil nav | ✅ Tamamlandı | [Ayrıntılar](tasks_claude/task5_frontend_setup.md) - Next.js 15 + i18n + Tenant Theme + Zustand kuruldu. |
@@ -106,7 +106,7 @@ Referans: [`roadmap/overview.md`](../roadmap/overview.md)
 | Faz | Toplam Görev | Tamamlanan | Durum |
 |-----|-------------|------------|-------|
 | Ön Hazırlık | 5 | 5 | ✅ Tamamlandı |
-| Faz 1 – Altyapı | 9 (7 Claude + 2 Human) | 3 | 🚧 Devam Ediyor |
+| Faz 1 – Altyapı | 9 (7 Claude + 2 Human) | 4 | 🚧 Devam Ediyor |
 | Faz 2 – Akademi | 6 (5 Claude + 1 Human) | 0 | ⬜ Başlanmadı |
 | Canlıya Geçiş | 2 (Human) | 0 | ⬜ Başlanmadı |
 | Faz 3 – Global | Planlanacak | — | 📋 Planlandı |

@@ -1,0 +1,41 @@
+# Dependency Management
+pip-tools
+
+# Web Framework
+fastapi
+uvicorn[standard]
+
+# Database
+# sqlmodel  # Artık SQLAlchemy 2.0 kullanıyoruz
+sqlalchemy[asyncio]
+asyncpg
+alembic
+
+# Configuration
+pydantic[email]
+pydantic-settings
+python-dotenv
+
+# Authentication
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Cache & Session
+redis
+
+# Email
+resend
+
+# Image processing
+Pillow
+
+# HTTP Client
+aiohttp
+
+# Background tasks
+celery
+
+# Dev/Testing
+pytest
+pytest-asyncio
+httpx
