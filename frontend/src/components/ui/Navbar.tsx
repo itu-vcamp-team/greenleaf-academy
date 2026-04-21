@@ -3,7 +3,7 @@
 import { BrandLogo } from "./BrandLogo";
 import { Button } from "./Button";
 import { Link, useRouter } from "@/i18n/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTenant } from "@/context/TenantContext";
 import { useUserRole } from "@/context/UserRoleContext";
 import { useAuthStore } from "@/store/auth.store";
