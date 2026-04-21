@@ -26,6 +26,10 @@ services:
           property: connectionString
       - key: RESEND_API_KEY
         sync: false
+      - key: MAIL_FROM_ADDRESS
+        value: noreply@greenleafakademi.com
+      - key: MAIL_FROM_NAME
+        value: Greenleaf Akademi
       - key: FRONTEND_URL
         value: https://tr.greenleafakademi.com
 
