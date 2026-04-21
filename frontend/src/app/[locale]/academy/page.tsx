@@ -47,8 +47,8 @@ export default function AcademyPage({ params }: PageProps) {
           animate={{ opacity: 1, y: 0 }}
           className="mb-10 text-center"
         >
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2">{t("title")}</h1>
-          <p className="text-gray-500 font-medium">{t("subtitle")}</p>
+          <h1 className="text-4xl font-black text-foreground tracking-tight mb-2 tracking-tight">{t("title")}</h1>
+          <p className="text-foreground/50 font-medium">{t("subtitle")}</p>
         </motion.div>
 
         {/* User Progress Overview */}
@@ -58,7 +58,7 @@ export default function AcademyPage({ params }: PageProps) {
         <SearchBar className="mb-8" locale={locale} />
 
         {/* Navigation Tabs */}
-        <div className="flex p-1.5 bg-gray-100/80 backdrop-blur-md rounded-2xl border border-gray-200 mb-8 max-w-sm mx-auto shadow-sm">
+        <div className="flex p-1.5 bg-foreground/5 backdrop-blur-md rounded-2xl border border-foreground/5 mb-8 max-w-sm mx-auto shadow-sm">
           <TabButton
             active={activeTab === "SHORT"}
             onClick={() => setActiveTab("SHORT")}
@@ -85,7 +85,7 @@ export default function AcademyPage({ params }: PageProps) {
           >
             {loading ? (
               Array(6).fill(0).map((_, i) => (
-                <div key={i} className="aspect-video bg-gray-100 rounded-2xl animate-pulse" />
+                <div key={i} className="aspect-video bg-foreground/5 rounded-2xl animate-pulse" />
               ))
             ) : contents.length > 0 ? (
               contents.map((item) => (
@@ -114,8 +114,8 @@ function TabButton({ active, onClick, icon, label }: any) {
       onClick={onClick}
       className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
         active
-          ? "bg-white text-primary shadow-lg shadow-primary/5 border border-primary/10"
-          : "text-gray-400 hover:text-gray-600"
+          ? "bg-surface text-primary shadow-lg shadow-primary/5 border border-primary/10"
+          : "text-foreground/30 hover:text-foreground/60"
       }`}
     >
       {icon}

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import apiClient from "@/lib/api-client";
 
 export interface TenantConfig {
   primary_color: string;
@@ -18,7 +19,7 @@ export interface TenantData {
 }
 
 interface TenantState {
-  activeTenant: TenantData;
+  activeTenant: TenantData | null;
   availableTenants: TenantData[];
   loading: boolean;
   theme: "light" | "dark";
@@ -26,25 +27,14 @@ interface TenantState {
   setAvailableTenants: (tenants: TenantData[]) => void;
   setLoading: (loading: boolean) => void;
   toggleTheme: () => void;
+  fetchTenants: () => Promise<void>;
   getTenantSlug: () => string;
 }
 
 export const useTenantStore = create<TenantState>()(
   persist(
     (set, get) => ({
-      activeTenant: {
-        id: "1",
-        slug: "tr",
-        name: "Greenleaf Türkiye",
-        logo: "🇹🇷",
-        config: {
-          primary_color: "#2D6A4F",
-          secondary_color: "#74C69D",
-          logo_url: null,
-          support_links: {},
-          social_media: {},
-        },
-      },
+      activeTenant: null,
       availableTenants: [],
       loading: false,
       theme: "dark",
@@ -71,7 +61,24 @@ export const useTenantStore = create<TenantState>()(
           return { theme: newTheme };
         });
       },
-      getTenantSlug: () => get().activeTenant?.slug || "tr",
+      fetchTenants: async () => {
+        set({ loading: true });
+        try {
+          const res = await apiClient.get<TenantData[]>("/tenants");
+          const tenants = res.data;
+          set({ availableTenants: tenants });
+          
+          // If no active tenant selected yet, pick the first one or matching slug
+          if (!get().activeTenant && tenants.length > 0) {
+            set({ activeTenant: tenants[0] });
+          }
+        } catch (error) {
+          console.error("Failed to fetch tenants:", error);
+        } finally {
+          set({ loading: false });
+        }
+      },
+      getTenantSlug: () => get().activeTenant?.slug || "tr-TR",
     }),
     {
       name: "greenleaf-tenant",

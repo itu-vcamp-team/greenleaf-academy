@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect } from "react";
 import { useTenantStore, TenantData } from "@/store/tenant.store";
 
 interface TenantContextType {
-  activeTenant: TenantData;
+  activeTenant: TenantData | null;
   availableTenants: TenantData[];
   setTenantBySlug: (slug: string) => void;
   loading: boolean;
@@ -18,51 +18,21 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const { 
     activeTenant, 
     availableTenants, 
-    setAvailableTenants,
     setActiveTenant,
-    setLoading,
+    fetchTenants,
     loading, 
     theme, 
     toggleTheme 
   } = useTenantStore();
 
   useEffect(() => {
-    // Initial data setup if empty
+    // Initial fetch from backend
     if (availableTenants.length === 0) {
-      const initialTenants: TenantData[] = [
-        {
-          id: "1",
-          slug: "tr",
-          name: "Greenleaf Türkiye",
-          logo: "🇹🇷",
-          config: {
-            primary_color: "#2D6A4F",
-            secondary_color: "#74C69D",
-            logo_url: null,
-            support_links: {},
-            social_media: {},
-          },
-        },
-        {
-          id: "2",
-          slug: "en",
-          name: "Greenleaf Global",
-          logo: "🇬🇧",
-          config: {
-            primary_color: "#1B4332",
-            secondary_color: "#40916C",
-            logo_url: null,
-            support_links: {},
-            social_media: {},
-          },
-        }
-      ];
-      setAvailableTenants(initialTenants);
-      if (!activeTenant) {
-        setActiveTenant(initialTenants[0]);
-      }
+      fetchTenants();
     }
-    
+  }, []);
+
+  useEffect(() => {
     // Ensure dark mode class is present if theme is dark
     if (theme === "dark") {
       document.documentElement.classList.add("dark");

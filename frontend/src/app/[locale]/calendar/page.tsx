@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
   Calendar as CalendarIcon, Clock, Link as LinkIcon, Plus, Trash2,
-  ChevronLeft, ChevronRight, Video, Shield
+  ChevronLeft, ChevronRight, Video, Shield, X
 } from "lucide-react";
 
 import { Navbar } from "@/components/ui/Navbar";
@@ -75,15 +75,15 @@ export default function CalendarPage() {
           {/* Mini Calendar Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             <GlassCard className="p-6 border-foreground/5 shadow-sm">
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-8 text-foreground">
                 <h3 className="font-bold text-lg">
                   {new Date().toLocaleDateString("tr-TR", { month: "long", year: "numeric" })}
                 </h3>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" className="w-8 h-8 p-0 rounded-full">
+                  <Button variant="ghost" size="sm" className="w-8 h-8 p-0 rounded-full hover:bg-foreground/5">
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="w-8 h-8 p-0 rounded-full">
+                  <Button variant="ghost" size="sm" className="w-8 h-8 p-0 rounded-full hover:bg-foreground/5">
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
@@ -108,12 +108,12 @@ export default function CalendarPage() {
           <div className="lg:col-span-2 space-y-4">
             {loading ? (
               Array(3).fill(0).map((_, i) => (
-                <div key={i} className="h-36 bg-gray-100/60 rounded-3xl animate-pulse border border-gray-100" />
+                <div key={i} className="h-36 bg-foreground/5 rounded-3xl animate-pulse border border-foreground/5" />
               ))
             ) : events.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center">
-                <CalendarIcon className="w-12 h-12 text-gray-200 mb-4" />
-                <p className="text-gray-400 font-medium text-sm">Yaklaşan etkinlik bulunmuyor.</p>
+                <CalendarIcon className="w-12 h-12 text-foreground/10 mb-4" />
+                <p className="text-foreground/40 font-medium text-sm italic">Yaklaşan etkinlik bulunmuyor.</p>
               </div>
             ) : (
               <AnimatePresence mode="popLayout">
@@ -170,7 +170,7 @@ function MiniCalendarDays({ events }: { events: CalendarEvent[] }) {
           >
             {day}
             {hasEvent && !isToday && (
-              <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
+              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full shadow-sm shadow-primary/50" />
             )}
           </div>
         );
@@ -188,7 +188,7 @@ function EventCard({
   role: string;
   onDelete: (id: string) => void;
 }) {
-  const isUpcoming = isEventUpcoming(event.event_date, event.date, event.time);
+  const isUpcoming = isEventUpcoming(event.event_date ?? "", event.date, event.time);
   const canJoin = role !== "GUEST" && isUpcoming && !!event.link;
 
   return (
@@ -197,12 +197,12 @@ function EventCard({
         <div className="flex flex-col md:flex-row gap-8 items-start">
           <div className="flex flex-col items-center justify-center min-w-[80px] py-4 bg-foreground/5 rounded-2xl border border-foreground/5">
             <span className="text-sm font-black text-primary">{event.date}</span>
-            <span className="text-lg font-bold">{event.time}</span>
+            <span className="text-lg font-bold text-foreground">{event.time}</span>
           </div>
 
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-bold">{event.title}</h3>
+              <h3 className="text-xl font-bold text-foreground">{event.title}</h3>
               {(role === "ADMIN" || role === "SUPERADMIN") && (
                 <button
                   onClick={() => onDelete(event.id)}
@@ -224,16 +224,16 @@ function EventCard({
                   <Shield className="w-4 h-4" /> Sadece Partnerlere Özel
                 </div>
               ) : canJoin ? (
-                <Link
+                <a
                   href={event.link!}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-xs font-black text-white bg-primary px-4 py-2 rounded-xl hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
                 >
                   <LinkIcon className="w-4 h-4" /> Yayına Katıl
-                </Link>
+                </a>
               ) : (
-                <span className="flex items-center gap-2 text-xs font-bold text-gray-400 italic">
+                <span className="flex items-center gap-2 text-xs font-bold text-foreground/20 italic cursor-not-allowed">
                   <Clock className="w-4 h-4" /> Yayın Sona Erdi
                 </span>
               )}
@@ -245,7 +245,7 @@ function EventCard({
   );
 }
 
-function isEventUpcoming(isoDate?: string, dateStr?: string, timeStr?: string): boolean {
+function isEventUpcoming(isoDate: string, dateStr?: string, timeStr?: string): boolean {
   if (isoDate) return new Date(isoDate) > new Date();
   if (dateStr === "Bugün" || dateStr === "Yarın") return true;
   try {
@@ -294,60 +294,73 @@ function AddEventModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-md">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-background/60 backdrop-blur-md">
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="w-full max-w-md bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-2xl"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        className="w-full max-w-md bg-surface p-8 rounded-[2.5rem] border border-foreground/5 shadow-2xl relative overflow-hidden"
       >
-        <h2 className="text-2xl font-bold mb-6">Yeni Canlı Yayın Ekle</h2>
-        <div className="space-y-3">
-          <input
-            type="text"
-            placeholder="Eğitim Başlığı *"
+        <div className="absolute top-0 right-0 p-6">
+          <button onClick={onClose} className="text-foreground/20 hover:text-foreground transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <h2 className="text-2xl font-bold mb-6 text-foreground italic flex items-center gap-2">
+            <CalendarIcon className="w-6 h-6 text-primary" /> Yeni Etkinlik
+        </h2>
+        <div className="space-y-4">
+          <Input
+            label="Eğitim Başlığı"
+            placeholder="Kanca Tekniği Eğitimi"
             value={form.title}
             onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:border-primary/50 text-sm"
+            required
           />
-          <input
-            type="text"
-            placeholder="Konuşmacı"
+          <Input
+            label="Konuşmacı"
+            placeholder="Lider Adı"
+            icon={<Video size={14}/>}
             value={form.speaker}
             onChange={e => setForm(p => ({ ...p, speaker: e.target.value }))}
-            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:border-primary/50 text-sm"
           />
-          <div className="grid grid-cols-2 gap-3">
-            <input
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Tarih"
               type="date"
               value={form.date}
               onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
-              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:border-primary/50 text-sm"
+              required
             />
-            <input
+            <Input
+              label="Saat"
               type="time"
               value={form.time}
               onChange={e => setForm(p => ({ ...p, time: e.target.value }))}
-              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:border-primary/50 text-sm"
+              required
             />
           </div>
-          <input
-            type="url"
-            placeholder="Zoom / Meet Linki"
+          <Input
+            label="Link"
+            placeholder="Zoom/Meet Linki"
+            icon={<LinkIcon size={14}/>}
             value={form.link}
             onChange={e => setForm(p => ({ ...p, link: e.target.value }))}
-            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:border-primary/50 text-sm"
           />
-          <textarea
-            placeholder="Açıklama"
-            value={form.description}
-            onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:border-primary/50 h-24 text-sm resize-none"
-          />
-          {error && <p className="text-red-500 text-xs font-medium">{error}</p>}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 italic pl-1">Açıklama</label>
+            <textarea
+                placeholder="Eğitim detayları..."
+                value={form.description}
+                onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-3 outline-none focus:border-primary/50 text-sm h-24 resize-none transition-all"
+            />
+          </div>
+          {error && <p className="text-red-500 text-xs font-bold italic">{error}</p>}
         </div>
-        <div className="flex gap-4 mt-6">
-          <Button variant="ghost" className="flex-1" onClick={onClose} disabled={saving}>Vazgeç</Button>
-          <Button className="flex-1" onClick={handleSubmit} disabled={saving}>
+        <div className="flex gap-4 mt-8">
+          <Button variant="ghost" className="flex-1 rounded-xl" onClick={onClose} disabled={saving}>Vazgeç</Button>
+          <Button className="flex-1 rounded-xl" onClick={handleSubmit} disabled={saving}>
             {saving ? "Kaydediliyor..." : "Kaydet"}
           </Button>
         </div>

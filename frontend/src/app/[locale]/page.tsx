@@ -4,7 +4,7 @@ import { Navbar } from "@/components/ui/Navbar";
 import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ChevronRight, Play, BookOpen, Clock, Shield, Target, Plus, Calendar, Globe, Zap, Users } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useUserRole } from "@/context/UserRoleContext";
 import { useTenant } from "@/context/TenantContext";
@@ -34,7 +34,7 @@ export default function Home({ params }: PageProps) {
     return () => clearInterval(timer);
   }, []);
 
-  const isTR = locale === "tr";
+  const isTR = locale.startsWith("tr");
 
   return (
     <div className="relative min-h-screen pb-20 overflow-x-hidden">

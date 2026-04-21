@@ -21,6 +21,7 @@ from src.routes.announcements import router as announcements_router
 from src.routes.resource_links import router as resources_router
 from src.routes.waitlist import router as waitlist_router
 from src.routes.admin_stats import router as admin_stats_router
+from src.routes.tenants import router as tenants_router
 
 settings = get_settings()
 
@@ -58,6 +59,7 @@ app.add_middleware(TenantMiddleware)
 
 # Public & Auth Routes
 app.include_router(auth_router, prefix="/api")
+app.include_router(tenants_router, prefix="/api")
 
 # Academy & Interaction Routes
 app.include_router(academy_router, prefix="/api")

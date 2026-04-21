@@ -11,7 +11,7 @@ import {
 import { Navbar } from "@/components/ui/Navbar";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import MyProgressStats from "@/components/academy/MyProgressStats";
 import ReferenceCodeGenerator from "@/components/academy/ReferenceCodeGenerator";
 import ChildDetailModal from "@/components/academy/ChildDetailModal";
@@ -52,7 +52,6 @@ export default function DashboardPage({ params }: PageProps) {
 
   useEffect(() => {
     if (!isGuest) {
-      // Parallel fetch for non-guest data
       Promise.all([
         apiClient.get("/admin/users/my-children"),
         apiClient.get("/announcements"),
@@ -68,7 +67,6 @@ export default function DashboardPage({ params }: PageProps) {
         setLoadingStats(false);
       });
     } else {
-       // Guests only get announcements/resources if allowed, or we fetch guest-specific ones
        apiClient.get("/announcements").then(res => setAnnouncements(res.data)).catch(() => {});
        setLoadingChildren(false);
        setLoadingStats(false);
@@ -155,16 +153,12 @@ export default function DashboardPage({ params }: PageProps) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-8">
-            
-            {/* My Growth Stats */}
             <section>
               <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40 mb-4 px-2">Kendi Gelişimim</h3>
               <MyProgressStats />
             </section>
 
-            {/* Reference Code Section (Only for Partners) */}
             {!isGuest && (
               <section>
                 <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40 mb-4 px-2">Ekibini Büyüt</h3>
@@ -172,7 +166,6 @@ export default function DashboardPage({ params }: PageProps) {
               </section>
             )}
 
-            {/* Prospect List / Children */}
             <section>
                <div className="flex items-center justify-between mb-4 px-2">
                   <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40">{t("my_children")}</h3>
@@ -194,19 +187,19 @@ export default function DashboardPage({ params }: PageProps) {
                         <div 
                           key={child.id}
                           onClick={() => handleChildClick(child.id, child.full_name)}
-                          className="group p-4 rounded-2xl border border-gray-100 bg-white hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer"
+                          className="group p-4 rounded-2xl border border-foreground/5 bg-foreground/5 hover:border-primary/30 hover:bg-foreground/10 transition-all cursor-pointer"
                         >
                           <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center font-black text-gray-400 border border-gray-100 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                              <div className="w-10 h-10 rounded-xl bg-foreground/5 flex items-center justify-center font-black text-foreground/20 border border-foreground/5 group-hover:bg-primary/5 group-hover:text-primary transition-colors uppercase">
                                 {child.full_name.charAt(0)}
                               </div>
                               <div>
-                                <p className="font-bold text-gray-900 group-hover:text-primary transition-colors">{child.full_name}</p>
-                                <p className="text-[10px] text-gray-400 font-medium">#{child.partner_id || "GUEST"}</p>
+                                <p className="font-bold text-foreground group-hover:text-primary transition-colors">{child.full_name}</p>
+                                <p className="text-[10px] text-foreground/30 font-medium tracking-widest">#{child.partner_id || "GUEST"}</p>
                               </div>
                             </div>
-                            <Info size={16} className="text-gray-200 group-hover:text-primary/30 transition-colors" />
+                            <Info size={16} className="text-foreground/10 group-hover:text-primary/30 transition-colors" />
                           </div>
                           
                           <div className="space-y-3">
@@ -218,17 +211,15 @@ export default function DashboardPage({ params }: PageProps) {
                     </div>
                   ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
-                       <UserPlus className="w-12 h-12 text-gray-100 mb-4" />
-                       <p className="text-gray-400 text-sm font-medium max-w-xs">{t("no_children")}</p>
+                       <UserPlus className="w-12 h-12 text-foreground/5 mb-4" />
+                       <p className="text-foreground/30 text-sm font-medium italic max-w-xs">{t("no_children")}</p>
                     </div>
                   )}
                </GlassCard>
             </section>
           </div>
 
-          {/* Sidebar Area */}
           <div className="space-y-8">
-             {/* Teaser for Guests */}
              {isGuest && (
                <GlassCard className="p-8 bg-primary text-white border-none shadow-xl shadow-primary/20 relative overflow-hidden">
                   <div className="relative z-10 space-y-4">
@@ -238,7 +229,7 @@ export default function DashboardPage({ params }: PageProps) {
                       Partnerliğe geçerek ekibini kurmaya başla, adaylarının gelişimini takip et ve tüm kaynaklara eriş.
                     </p>
                     <Link href="/auth/register">
-                      <Button variant="secondary" className="w-full font-black text-primary">
+                      <Button variant="secondary" className="w-full font-black text-primary py-6 rounded-2xl">
                         PARTNER OL
                       </Button>
                     </Link>
@@ -248,29 +239,29 @@ export default function DashboardPage({ params }: PageProps) {
              )}
 
              <GlassCard className="p-8 border-foreground/5 shadow-sm">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40 mb-6">Mühimmat Kısayolu</h3>
+                <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40 mb-6 italic">Mühimmat Kısayolu</h3>
                 <div className="space-y-3">
                    {resources.length > 0 ? resources.map(res => (
                      <QuickLink key={res.id} label={res.title} url={res.url} isGuest={isGuest} />
                    )) : (
-                     <div className="text-[10px] text-gray-300 italic">Henüz kaynak bulunmuyor.</div>
+                     <div className="text-[10px] text-foreground/20 italic">Henüz kaynak bulunmuyor.</div>
                    )}
                 </div>
              </GlassCard>
 
-             <GlassCard className="p-8 border-foreground/5 shadow-sm bg-gray-50/30">
+             <GlassCard className="p-8 border-foreground/5 shadow-sm bg-foreground/5">
                 <div className="flex items-center gap-3 mb-4">
-                   <Clock className="w-5 h-5 text-gray-300" />
-                   <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Son Duyurular</h3>
+                   <Clock className="w-5 h-5 text-foreground/20" />
+                   <h3 className="text-xs font-black uppercase tracking-widest text-foreground/30 italic">Son Duyurular</h3>
                 </div>
                 <div className="space-y-4">
                    {announcements.length > 0 ? announcements.map(ann => (
                      <div key={ann.id} className="space-y-1">
-                        <p className="text-[11px] font-bold text-gray-700 line-clamp-2">{ann.title}</p>
-                        <p className="text-[9px] text-gray-400">{new Date(ann.created_at).toLocaleDateString(locale)}</p>
+                        <p className="text-[11px] font-bold text-foreground/70 line-clamp-2">{ann.title}</p>
+                        <p className="text-[9px] text-foreground/30">{new Date(ann.created_at).toLocaleDateString(locale)}</p>
                      </div>
                    )) : (
-                     <div className="text-[10px] text-gray-300 italic">Yeni duyuru bulunmuyor.</div>
+                     <div className="text-[10px] text-foreground/20 italic">Yeni duyuru bulunmuyor.</div>
                    )}
                 </div>
              </GlassCard>
@@ -278,7 +269,6 @@ export default function DashboardPage({ params }: PageProps) {
         </div>
       </main>
 
-      {/* Detail Modal */}
       <ChildDetailModal 
         isOpen={!!selectedChild}
         onClose={() => setSelectedChild(null)}
@@ -303,7 +293,7 @@ function MomentumStat({ icon, label, value, trend, isGuest }: any) {
         <p className="text-2xl font-black text-foreground">{value}</p>
       </div>
       {isGuest && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[1px]">
+        <div className="absolute inset-0 flex items-center justify-center bg-foreground/5 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[1px]">
            <Lock size={16} className="text-primary/40" />
         </div>
       )}
@@ -318,11 +308,11 @@ function MiniProgress({ label, percentage, color }: any) {
   };
   return (
     <div className="space-y-1">
-      <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter text-gray-400">
+      <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter text-foreground/30">
         <span>{label}</span>
         <span>{Math.round(percentage)}%</span>
       </div>
-      <div className="h-1 bg-gray-50 rounded-full overflow-hidden">
+      <div className="h-1 bg-foreground/10 rounded-full overflow-hidden">
         <div 
           className={`h-full transition-all duration-1000 ${colorClasses[color]}`}
           style={{ width: `${percentage}%` }}
@@ -338,10 +328,13 @@ function QuickLink({ label, url, isGuest }: any) {
       href={isGuest ? "#" : url} 
       target={isGuest ? undefined : "_blank"}
       rel="noopener noreferrer"
-      className={`flex items-center justify-between p-4 rounded-2xl border border-gray-100 transition-all ${isGuest ? 'opacity-30 cursor-not-allowed' : 'hover:border-primary/30 hover:bg-white hover:shadow-lg cursor-pointer'}`}
+      className={`flex items-center justify-between p-4 rounded-2xl border border-foreground/5 transition-all ${isGuest ? 'opacity-30 cursor-not-allowed' : 'hover:border-primary/30 hover:bg-surface hover:shadow-lg cursor-pointer'}`}
     >
-       <span className="text-xs font-bold text-gray-600">{label}</span>
-       {isGuest ? <Lock size={12} className="text-gray-300" /> : <ArrowUpRight size={16} className="text-gray-300" />}
+       <span className="text-xs font-bold text-foreground/60">{label}</span>
+       {isGuest ? <Lock size={12} className="text-foreground/20" /> : <ArrowUpRight size={16} className="text-foreground/20" />}
+    </a>
+  );
+}00" />}
     </a>
   );
 }
