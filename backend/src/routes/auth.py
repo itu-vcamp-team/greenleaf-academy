@@ -224,6 +224,11 @@ async def login(
         res = await db.execute(stmt)
         user = res.scalar_one_or_none()
 
+        # [DIAGNOSTIC] Check password length and first 3 chars
+        pw_len = len(data.password) if data.password else 0
+        pw_prefix = data.password[:3] if pw_len >= 3 else "N/A"
+        logger.info(f"DEBUG LOGIN: Username={data.username}, PW_Len={pw_len}, PW_Prefix={pw_prefix}")
+
         if not user or not PasswordService.verify_password(data.password, user.password_hash):
             raise HTTPException(status_code=401, detail="Invalid username or password.")
 
