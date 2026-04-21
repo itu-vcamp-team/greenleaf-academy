@@ -4,8 +4,6 @@
 #
 #    pip-compile requirements.in
 #
---extra-index-url http://nexus.odealapp.com/repository/pypi-odeal/simple
---trusted-host nexus.odealapp.com
 
 aiohappyeyeballs==2.6.1
     # via aiohttp
