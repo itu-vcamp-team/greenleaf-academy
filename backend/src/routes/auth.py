@@ -214,57 +214,75 @@ async def login(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db_session)
 ):
-    # 1. Verify CAPTCHA
-    if not await CaptchaService.verify_login_captcha(data.session_key, data.captcha_answer):
-        raise HTTPException(status_code=400, detail="Invalid CAPTCHA answer.")
+    try:
+        # 1. Verify CAPTCHA
+        if not await CaptchaService.verify_login_captcha(data.session_key, data.captcha_answer):
+            raise HTTPException(status_code=400, detail="Invalid CAPTCHA answer.")
 
-    # 2. Find User
-    stmt = select(User).where(User.username == data.username)
-    res = await db.execute(stmt)
-    user = res.scalar_one_or_none()
+        # 2. Find User
+        stmt = select(User).where(User.username == data.username)
+        res = await db.execute(stmt)
+        user = res.scalar_one_or_none()
 
-    if not user or not PasswordService.verify_password(data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid username or password.")
+        if not user or not PasswordService.verify_password(data.password, user.password_hash):
+            raise HTTPException(status_code=401, detail="Invalid username or password.")
 
-    if not user.is_active:
-        raise HTTPException(status_code=403, detail="Account is not active. Please contact admin.")
+        if not user.is_active:
+            raise HTTPException(status_code=403, detail="Account is not active. Please contact admin.")
 
-    # 3. Check for 30-day 2FA
-    now = datetime.now(timezone.utc)
-    requires_2fa = False
-    if not user.last_2fa_at or (now - user.last_2fa_at.replace(tzinfo=timezone.utc) > timedelta(days=30)):
-        requires_2fa = True
+        # 3. Check for 30-day 2FA
+        now = datetime.now(timezone.utc)
+        requires_2fa = False
+        
+        if not user.last_2fa_at:
+            requires_2fa = True
+        else:
+            # Ensure last_2fa_at is treated as UTC for comparison
+            # SQLAlchemy DateTime(timezone=True) handles this, but we force for safety
+            last_dt = user.last_2fa_at.replace(tzinfo=timezone.utc) if user.last_2fa_at.tzinfo is None else user.last_2fa_at
+            if now - last_dt > timedelta(days=30):
+                requires_2fa = True
 
-    if requires_2fa:
-        otp = await OTPService.generate_otp(str(user.id))
-        background_tasks.add_task(
-            MailingService.send_monthly_2fa_email,
-            to_email=user.email,
-            code=otp,
-            full_name=user.full_name
+        if requires_2fa:
+            logger.info(f"Triggering 2FA for user {user.username}")
+            otp = await OTPService.generate_otp(str(user.id))
+            
+            background_tasks.add_task(
+                MailingService.send_monthly_2fa_email,
+                to_email=user.email,
+                code=otp,
+                full_name=user.full_name
+            )
+            
+            temp_token = str(uuid.uuid4())
+            r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+            await r.setex(f"login_2fa:{temp_token}", 300, str(user.id))
+            await r.aclose()
+            
+            return LoginResponseSchema(requires_2fa=True, temp_token=temp_token, user_id=user.id)
+
+        # 4. Success -> Create Session (Kick-out happens here)
+        jti = await SessionService.create_session(
+            db, user.id, 
+            ip_address=request.client.host if request.client else None,
+            device_info=request.headers.get("user-agent")
         )
-        
-        temp_token = str(uuid.uuid4())
-        r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
-        await r.setex(f"login_2fa:{temp_token}", 300, str(user.id))
-        await r.aclose()
-        
-        return LoginResponseSchema(requires_2fa=True, temp_token=temp_token, user_id=user.id)
+        await db.commit()
 
-    # 4. Success -> Create Session (Kick-out happens here)
-    jti = await SessionService.create_session(
-        db, user.id, 
-        ip_address=request.client.host if request.client else None,
-        device_info=request.headers.get("user-agent")
-    )
-    await db.commit()
+        access_token = TokenService.create_access_token(str(user.id), user.role.value, str(user.tenant_id), jti)
+        refresh_token = TokenService.create_refresh_token(str(user.id), jti)
 
-    access_token = TokenService.create_access_token(str(user.id), user.role.value, str(user.tenant_id), jti)
-    refresh_token = TokenService.create_refresh_token(str(user.id), jti)
-
-    return LoginResponseSchema(
-        tokens=TokenResponseSchema(access_token=access_token, refresh_token=refresh_token)
-    )
+        return LoginResponseSchema(
+            tokens=TokenResponseSchema(access_token=access_token, refresh_token=refresh_token)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"CRITICAL LOGIN ERROR: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, 
+            detail="An internal server error occurred during login. Please try again later."
+        )
 
 
 @router.post("/login/verify-2fa", response_model=TokenResponseSchema)

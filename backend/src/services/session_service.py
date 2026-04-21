@@ -1,8 +1,11 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.datalayer.model.db.user_session import UserSession
+from src.config import get_settings
+
+settings = get_settings()
 
 
 class SessionService:
@@ -31,27 +34,29 @@ class SessionService:
 
         # 2. Create new session
         jti = str(uuid.uuid4())
+        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        
         new_session = UserSession(
             user_id=user_id,
-            jti=jti,
+            token_jti=jti,
             ip_address=ip_address,
             device_info=device_info,
             is_active=True,
-            last_activity_at=datetime.now(timezone.utc)
+            expires_at=expires_at,
+            last_used_at=datetime.now(timezone.utc)
         )
         db.add(new_session)
-        # Flush or commit happens in the route
         return jti
 
     @staticmethod
     async def is_session_active(db: AsyncSession, jti: str) -> bool:
         """Checks if a session with the given JTI is still active in the database."""
-        stmt = select(UserSession).where(UserSession.jti == jti, UserSession.is_active == True)
+        stmt = select(UserSession).where(UserSession.token_jti == jti, UserSession.is_active == True)
         result = await db.execute(stmt)
         return result.scalar_one_or_none() is not None
 
     @staticmethod
     async def deactivate_session(db: AsyncSession, jti: str):
         """Deactivates a specific session (Logout)."""
-        stmt = update(UserSession).where(UserSession.jti == jti).values(is_active=False)
+        stmt = update(UserSession).where(UserSession.token_jti == jti).values(is_active=False)
         await db.execute(stmt)
