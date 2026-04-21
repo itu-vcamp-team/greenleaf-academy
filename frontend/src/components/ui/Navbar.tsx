@@ -2,7 +2,7 @@
 
 import { BrandLogo } from "./BrandLogo";
 import { Button } from "./Button";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { motion } from "framer-motion";
 import { useTenant } from "@/context/TenantContext";
 import { useUserRole } from "@/context/UserRoleContext";
