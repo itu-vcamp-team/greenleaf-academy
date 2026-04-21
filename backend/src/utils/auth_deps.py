@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Union
 import uuid
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -10,11 +10,12 @@ from src.services.token_service import TokenService
 from src.services.session_service import SessionService
 from sqlalchemy import select
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+oauth2_scheme_strict = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=True)
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    token: str = Depends(oauth2_scheme_strict),
     db: AsyncSession = Depends(get_db_session)
 ) -> User:
     """
@@ -50,6 +51,45 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+async def get_optional_user(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db_session)
+) -> User:
+    """
+    Returns the user if token is valid, otherwise returns a mock Guest user object.
+    Does NOT throw 401 if token is missing or invalid.
+    """
+    if not token or token == "undefined" or token == "null":
+        return User(
+            id=uuid.uuid4(), 
+            role=UserRole.GUEST, 
+            username=f"guest_{uuid.uuid4().hex[:8]}", 
+            email="guest@local",
+            full_name="Guest User",
+            password_hash="",
+            tenant_id=uuid.uuid4() # Dummy
+        )
+    
+    payload = TokenService.decode_token(token)
+    if not payload:
+        return User(id=uuid.uuid4(), role=UserRole.GUEST, username="Guest", email="guest@local", full_name="Guest User", password_hash="", tenant_id=uuid.uuid4())
+    
+    user_id: str = payload.get("sub")
+    jti: str = payload.get("jti")
+    
+    if not user_id or not jti:
+        return User(id=uuid.uuid4(), role=UserRole.GUEST, username="Guest", email="guest@local", full_name="Guest User", password_hash="", tenant_id=uuid.uuid4())
+    
+    if not await SessionService.is_session_active(db, jti):
+        return User(id=uuid.uuid4(), role=UserRole.GUEST, username="Guest", email="guest@local", full_name="Guest User", password_hash="", tenant_id=uuid.uuid4())
+
+    stmt = select(User).where(User.id == uuid.UUID(user_id))
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    return user or User(id=uuid.uuid4(), role=UserRole.GUEST, username="Guest")
 
 
 def require_roles(allowed_roles: list[UserRole]):

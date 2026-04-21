@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,20 +15,20 @@ from src.datalayer.model.dto.academy_schemas import (
 )
 from src.datalayer.repository.academy_repository import AcademyRepository
 from src.services.academy_service import AcademyService
-from src.utils.auth_deps import get_current_user, get_current_admin
+from src.utils.auth_deps import get_current_user, get_current_admin, get_optional_user
 from src.utils.tenant_deps import get_current_tenant_id
 from src.exceptions import PrerequisiteNotMetError, NotFoundError
 
 router = APIRouter(prefix="/academy", tags=["Academy"])
 
 
-@router.get("/contents", response_model=List[ContentResponse | GuestContentResponse])
+@router.get("/contents", response_model=list[ContentResponse | GuestContentResponse])
 async def list_contents(
     type: ContentType,
     locale: str = "tr",
     db: AsyncSession = Depends(get_db_session),
     tenant_id: uuid.UUID = Depends(get_current_tenant_id),
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_optional_user),
 ):
     """
     Lists academy contents based on user role and prerequisite logic.
@@ -64,14 +64,14 @@ async def list_contents(
     return responses
 
 
-@router.get("/contents/search", response_model=List[ContentResponse | GuestContentResponse])
+@router.get("/contents/search", response_model=list[ContentResponse | GuestContentResponse])
 async def search_contents(
     q: str = Query(..., min_length=2),
     type: Optional[ContentType] = None,
     locale: str = "tr",
     db: AsyncSession = Depends(get_db_session),
     tenant_id: uuid.UUID = Depends(get_current_tenant_id),
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_optional_user),
 ):
     """
     Full-text search (ILIKE) on academy contents.
@@ -100,7 +100,7 @@ async def get_content(
     content_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
     tenant_id: uuid.UUID = Depends(get_current_tenant_id),
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_optional_user),
 ):
     """
     Get detailed content. 

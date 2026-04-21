@@ -24,7 +24,7 @@ export default function MyProgressStats() {
   if (!stats) return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
       {[1, 2].map(i => (
-        <div key={i} className="h-32 bg-gray-50 rounded-[2rem] animate-pulse border border-gray-100" />
+        <div key={i} className="h-32 glass animate-pulse rounded-[2rem] border border-foreground/5 shadow-sm" />
       ))}
     </div>
   );
@@ -60,14 +60,14 @@ function StatCard({ label, icon, completed, total, percentage, color, t_progress
     blue: {
       bg: "bg-blue-500/5",
       border: "border-blue-500/10",
-      text: "text-blue-600",
+      text: "text-blue-500",
       bar: "bg-blue-500",
       iconBg: "bg-blue-500/10"
     },
     emerald: {
       bg: "bg-emerald-500/5",
       border: "border-emerald-500/10",
-      text: "text-emerald-600",
+      text: "text-emerald-500",
       bar: "bg-emerald-500",
       iconBg: "bg-emerald-500/10"
     }
@@ -80,7 +80,7 @@ function StatCard({ label, icon, completed, total, percentage, color, t_progress
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative group overflow-hidden bg-white border ${c.border} rounded-[2rem] p-6 shadow-sm hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-500`}
+      className={`relative group overflow-hidden bg-surface border border-foreground/5 rounded-[2rem] p-6 shadow-sm hover:border-primary/20 transition-all duration-500`}
     >
       <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-4">
@@ -88,34 +88,49 @@ function StatCard({ label, icon, completed, total, percentage, color, t_progress
             {isCompleted ? <Trophy className="w-5 h-5" /> : icon}
           </div>
           <div>
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 block">{label}</span>
+            <span className="text-[10px] font-black text-foreground/30 uppercase tracking-[0.2em] mb-1 block">{label}</span>
             <div className="flex items-center gap-2">
-               <h4 className="text-xl font-black text-gray-900 leading-none">
-                 {completed}<span className="text-gray-300 mx-1">/</span>{total}
-               </h4>
-               <span className="text-[10px] font-bold text-gray-400 mt-1">{t_completed}</span>
+               {total > 0 ? (
+                 <>
+                   <h4 className="text-xl font-black text-foreground leading-none">
+                     {completed}<span className="text-foreground/20 mx-1">/</span>{total}
+                   </h4>
+                   <span className="text-[10px] font-bold text-foreground/30 mt-1">{t_completed}</span>
+                 </>
+               ) : (
+                 <h4 className="text-sm font-bold text-foreground/40 leading-none italic">
+                   Henüz İçerik Yok
+                 </h4>
+               )}
             </div>
           </div>
         </div>
-        <div className={`text-sm font-black italic ${c.text} bg-white px-3 py-1 rounded-full border ${c.border} shadow-sm`}>
-          %{Math.round(percentage)}
+        <div className={`text-sm font-black italic ${c.text} px-3 py-1 rounded-full border border-foreground/5 bg-foreground/5 shadow-sm min-w-[3rem] text-center`}>
+          %{total > 0 ? Math.round(percentage) : 0}
         </div>
       </div>
 
       <div className="space-y-2">
-        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
+        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-foreground/30">
            <span>{t_progress}</span>
            <span>{isCompleted ? "Zirve" : "Devam Ediyor"}</span>
         </div>
-        <div className="h-3 bg-gray-50 rounded-full overflow-hidden p-0.5 border border-gray-100">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${percentage}%` }}
-            transition={{ duration: 1.5, ease: "easeOut" }}
-            className={`h-full rounded-full ${c.bar} shadow-lg shadow-current/20 relative overflow-hidden`}
-          >
-             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-          </motion.div>
+        <div className="h-3 bg-foreground/5 rounded-full overflow-hidden p-0.5 border border-foreground/5 relative">
+          {total > 0 && (
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${percentage}%` }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+              className={`h-full rounded-full ${c.bar} shadow-lg shadow-current/20 relative overflow-hidden`}
+            >
+               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+            </motion.div>
+          )}
+          {total === 0 && (
+            <div className="absolute inset-0 bg-foreground/5 flex items-center justify-center">
+              <div className="w-1/2 h-0.5 bg-foreground/10 rounded-full animate-pulse" />
+            </div>
+          )}
         </div>
       </div>
       

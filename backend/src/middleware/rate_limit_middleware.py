@@ -30,7 +30,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.redis = aioredis.from_url(
             settings.REDIS_URL,
             encoding="utf-8",
-            decode_responses=True
+            decode_responses=True,
+            socket_timeout=1.0,
+            socket_connect_timeout=1.0,
+            retry_on_timeout=False
         )
 
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -53,44 +56,48 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         max_requests, window_seconds, block_seconds = config
 
-        # 4. Check if blocked
-        block_key = f"rl_block:{ip}:{path}"
-        if await self.redis.get(block_key):
-            minutes = block_seconds // 60
-            return Response(
-                content=json.dumps({
-                    "detail": f"Emniyetiniz için kısa süreliğine kısıtlandınız. Lütfen {minutes} dakika sonra tekrar deneyin.",
-                    "code": "RATE_LIMIT_EXCEEDED"
-                }),
-                status_code=429,
-                media_type="application/json",
-                headers={"Retry-After": str(block_seconds)},
-            )
+        # Rate limiting logic wrapped in try/except to avoid hanging if Redis is down
+        try:
+            # 4. Check if blocked
+            block_key = f"rl_block:{ip}:{path}"
+            if await self.redis.get(block_key):
+                minutes = block_seconds // 60
+                return Response(
+                    content=json.dumps({
+                        "detail": f"Emniyetiniz için kısa süreliğine kısıtlandınız. Lütfen {minutes} dakika sonra tekrar deneyin.",
+                        "code": "RATE_LIMIT_EXCEEDED"
+                    }),
+                    status_code=429,
+                    media_type="application/json",
+                    headers={"Retry-After": str(block_seconds)},
+                )
 
-        # 5. Increment counter
-        count_key = f"rl_count:{ip}:{path}"
-        current_count = await self.redis.incr(count_key)
+            # 5. Increment counter
+            count_key = f"rl_count:{ip}:{path}"
+            current_count = await self.redis.incr(count_key)
 
-        if current_count == 1:
-            await self.redis.expire(count_key, window_seconds)
+            if current_count == 1:
+                await self.redis.expire(count_key, window_seconds)
 
-        # 6. Check limit exceeded
-        if current_count > max_requests:
-            if block_seconds > 0:
-                await self.redis.setex(block_key, block_seconds, "1")
-            
-            await self.redis.delete(count_key)
-            logger.warning(f"Rate limit exceeded: {ip} -> {path}")
-            
-            minutes = block_seconds // 60
-            return Response(
-                content=json.dumps({
-                    "detail": f"Emniyetiniz için kısa süreliğine kısıtlandınız. Lütfen {minutes} dakika sonra tekrar deneyin.",
-                    "code": "RATE_LIMIT_EXCEEDED"
-                }),
-                status_code=429,
-                media_type="application/json",
-            )
+            # 6. Check limit exceeded
+            if current_count > max_requests:
+                if block_seconds > 0:
+                    await self.redis.setex(block_key, block_seconds, "1")
+                
+                await self.redis.delete(count_key)
+                logger.warning(f"Rate limit exceeded: {ip} -> {path}")
+                
+                minutes = block_seconds // 60
+                return Response(
+                    content=json.dumps({
+                        "detail": f"Emniyetiniz için kısa süreliğine kısıtlandınız. Lütfen {minutes} dakika sonra tekrar deneyin.",
+                        "code": "RATE_LIMIT_EXCEEDED"
+                    }),
+                    status_code=429,
+                    media_type="application/json",
+                )
+        except (aioredis.RedisError, ConnectionError, Exception) as e:
+            logger.error(f"RateLimit Redis error: {e}. Bypassing rate limit for stability.")
 
         # 7. Proceed to next middleware/route
         response = await call_next(request)

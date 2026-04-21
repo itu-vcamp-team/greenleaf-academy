@@ -21,7 +21,10 @@ class TenantMiddleware(BaseHTTPMiddleware):
         self.redis_client = aioredis.from_url(
             settings.REDIS_URL,
             encoding="utf-8",
-            decode_responses=True
+            decode_responses=True,
+            socket_timeout=1.0,
+            socket_connect_timeout=1.0,
+            retry_on_timeout=False
         )
 
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -99,13 +102,13 @@ class TenantMiddleware(BaseHTTPMiddleware):
     async def _resolve_tenant(self, slug: str) -> dict | None:
         cache_key = f"tenant:{slug}"
 
-        # 1. Check Redis
+        # 1. Check Redis (Fail-fast if Redis is unreachable)
         try:
             cached = await self.redis_client.get(cache_key)
             if cached:
                 return json.loads(cached)
-        except Exception as e:
-            logger.error(f"Redis error in TenantMiddleware: {e}")
+        except (aioredis.RedisError, ConnectionError, Exception) as e:
+            logger.error(f"Redis cache fetch error: {e}. Falling back to database.")
 
         # 2. Check DB
         async with AsyncSessionFactory() as session:
@@ -124,10 +127,10 @@ class TenantMiddleware(BaseHTTPMiddleware):
             "config": tenant.config or {},
         }
 
-        # 3. Write to Redis (300s TTL)
+        # 3. Write to Redis (300s TTL) - Background task
         try:
             await self.redis_client.setex(cache_key, 300, json.dumps(tenant_dict))
         except Exception as e:
-            logger.error(f"Redis write error in TenantMiddleware: {e}")
+            logger.error(f"Redis write error: {e}")
 
         return tenant_dict

@@ -71,32 +71,32 @@ export default function SearchBar({ className = "", locale }: SearchBarProps) {
   return (
     <div className={`relative ${className}`} ref={searchRef}>
       {/* Input Group */}
-      <div className="flex items-center gap-2 border border-gray-200 rounded-2xl px-4 py-3
-                      bg-white focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/5 transition-all shadow-sm">
-        <Search size={18} className="text-gray-400 shrink-0" />
+      <div className="flex items-center gap-2 border border-foreground/10 rounded-2xl px-4 py-3
+                      bg-surface focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/5 transition-all shadow-sm">
+        <Search size={18} className="text-foreground/20 shrink-0" />
         <input
           type="text"
           value={query}
           onChange={handleChange}
           onFocus={() => query.length >= 2 && setShowResults(true)}
           placeholder={t("search_placeholder")}
-          className="flex-1 text-sm outline-none bg-transparent placeholder:text-gray-300 font-medium"
+          className="flex-1 text-sm outline-none bg-transparent placeholder:text-foreground/20 font-medium text-foreground"
         />
         {loading ? (
           <Loader2 size={16} className="text-primary animate-spin" />
         ) : query && (
           <button onClick={clearSearch}>
-            <X size={16} className="text-gray-400 hover:text-gray-600 transition-colors" />
+            <X size={16} className="text-foreground/40 hover:text-foreground/60 transition-colors" />
           </button>
         )}
       </div>
 
       {/* Results Dropdown */}
       {showResults && (
-        <div className="absolute top-full left-0 right-0 z-[60] mt-2 bg-white/80 backdrop-blur-md
-                        border border-gray-100 rounded-2xl shadow-2xl max-h-[480px] overflow-y-auto overflow-x-hidden p-3 custom-scrollbar">
+        <div className="absolute top-full left-0 right-0 z-[60] mt-2 glass md:bg-surface/80
+                        border border-foreground/5 rounded-2xl shadow-2xl max-h-[480px] overflow-y-auto overflow-x-hidden p-3 custom-scrollbar text-foreground">
           {results.length === 0 ? (
-            <div className="py-8 text-center text-gray-400 text-sm italic font-medium">
+            <div className="py-8 text-center text-foreground/30 text-sm italic font-medium">
               "{query}" {t("no_results")}
             </div>
           ) : (

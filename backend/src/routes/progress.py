@@ -8,7 +8,7 @@ from src.datalayer.model.db.academy_content import ContentType
 from src.schemas.progress import WatchProgressSchema
 from src.datalayer.repository.progress_repository import ProgressRepository
 from src.services.progress_service import ProgressService
-from src.utils.auth_deps import get_current_partner
+from src.utils.auth_deps import get_current_partner, get_optional_user
 from src.utils.tenant_deps import get_current_tenant_id
 
 router = APIRouter(prefix="/progress", tags=["Progress"])
@@ -41,10 +41,17 @@ async def update_watch_progress(
 @router.get("/my-stats")
 async def get_my_stats(
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_partner),
+    current_user: User = Depends(get_optional_user),
     tenant_id: uuid.UUID = Depends(get_current_tenant_id)
 ):
-    """Returns overall completion stats for the current partner."""
+    """Returns overall completion stats for the current user."""
+    from src.datalayer.model.db.user import UserRole
+    if current_user.role == UserRole.GUEST:
+        return {
+            "shorts": {"completed": 0, "total": 0, "percentage": 0},
+            "masterclass": {"completed": 0, "total": 0, "percentage": 0}
+        }
+    
     repo = ProgressRepository(db, current_user.id)
     service = ProgressService(repo)
     

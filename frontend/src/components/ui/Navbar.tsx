@@ -41,14 +41,14 @@ export function Navbar() {
       <motion.nav 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="fixed top-0 inset-x-0 z-50 p-4"
+        className="fixed top-0 inset-x-0 z-[70] p-4"
       >
         <div className="max-w-7xl mx-auto glass rounded-2xl px-6 py-3 flex items-center justify-between">
           <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
             <BrandLogo />
           </Link>
           
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-8 text-foreground/80">
             {navLinks.map((link) => (
               <NavLink key={link.href} href={link.href} icon={link.icon}>
                 {link.label}
@@ -64,7 +64,7 @@ export function Navbar() {
               {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
 
-            <div className="hidden sm:flex items-center gap-2 p-1 bg-foreground/5 rounded-xl border border-foreground/10">
+            <div className="hidden sm:flex items-center gap-2 p-1 bg-foreground/5 rounded-xl border border-foreground/10 text-foreground">
                <div className="px-3 py-1 text-[10px] font-bold uppercase text-primary flex items-center gap-1">
                   <span>{activeTenant?.logo}</span>
                   <span>{activeTenant?.name}</span>
@@ -102,7 +102,7 @@ export function Navbar() {
             </div>
 
             <button 
-              className="md:hidden p-2 text-foreground/60 hover:text-primary transition-colors"
+              className="md:hidden p-2 text-foreground/60 hover:text-primary transition-colors flex items-center justify-center"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

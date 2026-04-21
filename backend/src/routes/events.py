@@ -1,6 +1,6 @@
 from __future__ import annotations
 import uuid
-from typing import Optional, List
+from typing import Optional, List, Union
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query, BackgroundTasks, Response
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,35 +11,39 @@ from src.datalayer.model.db.event import EventCategory, EventVisibility
 from src.datalayer.repository.event_repository import EventRepository
 from src.services.event_service import EventService
 from src.services.mailing_service import MailingService
-from src.utils.auth_deps import get_current_user, get_current_admin, get_current_partner
+from src.utils.auth_deps import get_current_user, get_current_admin, get_current_partner, get_optional_user
 from src.utils.tenant_deps import get_current_tenant_id
 from src.utils.ical_generator import generate_ics
+from src.schemas.event import EventResponse, GuestEventResponse
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
-@router.get("/")
+@router.get("/", response_model=list[EventResponse | GuestEventResponse])
 async def list_events(
     limit: int = Query(default=20, le=100),
     db: AsyncSession = Depends(get_db_session),
     tenant_id: uuid.UUID = Depends(get_current_tenant_id),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_optional_user),
 ):
     """Lists upcoming events. Guests see less info."""
     repo = EventRepository(db, tenant_id)
     events = await repo.get_upcoming_events(current_user.role, limit)
     return [_sanitize_event(e, current_user.role) for e in events]
 
-@router.get("/calendar")
+@router.get("/calendar", response_model=list[EventResponse | GuestEventResponse])
 async def get_calendar_events(
-    year: int = Query(..., ge=2024, le=2100),
-    month: int = Query(..., ge=1, le=12),
+    year: int | None = Query(None, ge=2024, le=2100),
+    month: int | None = Query(None, ge=1, le=12),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_current_tenant_id),
-    current_user: User = Depends(get_current_user),
+    current_user=Depends(get_optional_user)
 ):
-    """Calendar view data for a specific month."""
-    repo = EventRepository(db, tenant_id)
-    events = await repo.get_events_by_month(year, month, current_user.role)
+    """Returns events for a specific month for calendar view."""
+    now = datetime.now()
+    year = year or now.year
+    month = month or now.month
+    
+    repo = EventRepository(db)
+    events = await repo.get_month_events(year, month, current_user.role)
     return [_sanitize_event(e, current_user.role) for e in events]
 
 @router.get("/{event_id}/add-to-calendar")
