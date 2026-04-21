@@ -78,7 +78,7 @@ export const useTenantStore = create<TenantState>()(
           set({ loading: false });
         }
       },
-      getTenantSlug: () => get().activeTenant?.slug || "tr-TR",
+      getTenantSlug: () => get().activeTenant?.slug || "tr",
     }),
     {
       name: "greenleaf-tenant",
