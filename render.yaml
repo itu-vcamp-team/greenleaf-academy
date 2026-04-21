@@ -10,10 +10,10 @@ services:
     #   render run greenleaf-backend -- python seed_initial_data.py
     buildCommand: pip install -r requirements.txt && alembic upgrade head
     startCommand: uvicorn src.app:app --host 0.0.0.0 --port 10000
-    plan: free
+    plan: starter
     disk:
       name: greenleaf-uploads
-      mountPath: /var/data
+      mountPath: /var/data/uploads   # UPLOAD_DIR ile aynı path — alt klasör oluşturmaya gerek yok
       sizeGB: 1
     envVars:
       - key: APP_ENV

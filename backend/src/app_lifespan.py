@@ -18,8 +18,16 @@ async def lifespan(app: FastAPI):
 
     # 1. UPLOAD_DIR'i oluştur (Render Disk veya local)
     upload_dir = Path(settings.UPLOAD_DIR)
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    logger.info("Upload dizini hazır: %s", upload_dir)
+    try:
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        logger.info("Upload dizini hazır: %s", upload_dir)
+    except OSError as exc:
+        # Render Disk production'da mount edilmiş olmalı.
+        # Lokal dev'de /var/data yoksa sadece uyarı ver, sunucu başlasın.
+        logger.warning(
+            "Upload dizini oluşturulamadı (%s): %s — dosya yükleme özelliği çalışmayabilir.",
+            upload_dir, exc
+        )
 
     if settings.APP_ENV == "development":
         # Geliştirme ortamında SQLAlchemy ile tabloları oluştur (hızlı iterasyon)
