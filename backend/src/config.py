@@ -30,7 +30,6 @@ class Settings(BaseSettings):
     REDIS_URL: str  # örn: redis://localhost:6379/0
 
     # JWT
-    JWT_SECRET_KEY: str  # Added key
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30

@@ -20,9 +20,6 @@ const nextConfig: NextConfig = {
       { hostname: "img.youtube.com" }, // YouTube thumbnails
     ],
   },
-  experimental: {
-    allowedDevOrigins: ["0.0.0.0", "localhost:3000"],
-  },
 };
 
 export default withNextIntl(nextConfig);

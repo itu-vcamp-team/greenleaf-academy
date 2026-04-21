@@ -23,7 +23,7 @@ export function RegistrationFlow() {
     username: "",
     email: "",
     password: "",
-    phone: "",
+    phone: "",   // stored as "+90XXXXXXXXXX"
   });
 
   // Step 2: Global Account
@@ -47,8 +47,9 @@ export function RegistrationFlow() {
       const res = await apiClient.post("/auth/register/step1", formData);
       setSessionId(res.data.session_id);
       setStep(2);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Kayıt başlatılamadı.");
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      setError(e.response?.data?.detail || "Kayıt başlatılamadı.");
     } finally {
       setLoading(false);
     }
@@ -64,8 +65,9 @@ export function RegistrationFlow() {
         ...glData,
       });
       setStep(3);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Global hesap doğrulanamadı.");
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      setError(e.response?.data?.detail || "Global hesap doğrulanamadı.");
     } finally {
       setLoading(false);
     }
@@ -87,8 +89,9 @@ export function RegistrationFlow() {
       } else {
         router.push("/academy");
       }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Kayıt tamamlanamadı.");
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      setError(e.response?.data?.detail || "Kayıt tamamlanamadı.");
     } finally {
       setLoading(false);
     }
@@ -161,6 +164,30 @@ export function RegistrationFlow() {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
                 />
+                {/* Phone input with +90 prefix */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-black uppercase tracking-widest text-foreground/40 italic mb-1">
+                    Telefon
+                  </label>
+                  <div className="flex items-stretch">
+                    <span className="flex items-center px-3 bg-foreground/5 border border-foreground/10 border-r-0 rounded-l-xl text-sm text-foreground/60 font-mono select-none">
+                      +90
+                    </span>
+                    <input
+                      type="tel"
+                      placeholder="5XX XXX XXXX"
+                      maxLength={10}
+                      value={formData.phone.replace(/^\+90/, "")}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                        setFormData({ ...formData, phone: digits ? `+90${digits}` : "" });
+                      }}
+                      className="flex-1 h-12 px-3 bg-foreground/5 border border-foreground/10 rounded-r-xl text-sm text-foreground outline-none focus:border-primary/50 transition-colors"
+                      required
+                    />
+                  </div>
+                  <p className="text-[10px] text-foreground/30 italic">Örnek: +905551234567</p>
+                </div>
                 {error && <p className="text-red-400 text-xs italic">{error}</p>}
                 <Button
                   type="submit"
@@ -318,7 +345,7 @@ export function RegistrationFlow() {
                 <CheckCircle2 className="w-8 h-8 text-green-400" />
               </div>
               <h1 className="text-2xl font-bold mb-3">Kaydınız Alındı!</h1>
-              <p className="text-foreground/40 text-sm leading-relaxed mb-8">|
+              <p className="text-foreground/40 text-sm leading-relaxed mb-8">
                 Başvurunuz incelemeye alındı. Onaylandıktan sonra e-posta ile bilgilendirileceksiniz.
                 Doğrulama sonrası tüm eğitimlere erişebileceksiniz.
               </p>

@@ -11,6 +11,18 @@ class RegisterStep1Schema(BaseModel):
     phone: Optional[str] = None
     password: str
 
+    @field_validator("phone", mode="before")
+    @classmethod
+    def validate_phone(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v == "":
+            return None
+        cleaned = str(v).strip()
+        if not re.match(r'^\+90[0-9]{10}$', cleaned):
+            raise ValueError(
+                "Telefon numarası +90XXXXXXXXXX formatında olmalıdır. Örnek: +905551234567"
+            )
+        return cleaned
+
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
@@ -85,6 +97,18 @@ class ProfileUpdateSchema(BaseModel):
     phone: Optional[str] = None
     current_password: Optional[str] = None
     new_password: Optional[str] = None
+
+    @field_validator("phone", mode="before")
+    @classmethod
+    def validate_phone(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v == "":
+            return None
+        cleaned = str(v).strip()
+        if not re.match(r'^\+90[0-9]{10}$', cleaned):
+            raise ValueError(
+                "Telefon numarası +90XXXXXXXXXX formatında olmalıdır. Örnek: +905551234567"
+            )
+        return cleaned
 
 
 class ResetPasswordSchema(BaseModel):
