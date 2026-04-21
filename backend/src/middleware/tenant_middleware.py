@@ -11,7 +11,7 @@ from src.logger import logger
 
 settings = get_settings()
 
-SKIP_PATHS = ["/health", "/docs", "/openapi.json", "/redoc"]
+SKIP_PATHS = ["/health", "/docs", "/openapi.json", "/redoc", "/api/tenants"]
 DEFAULT_TENANT_SLUG = "tr"
 
 

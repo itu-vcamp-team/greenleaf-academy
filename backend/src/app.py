@@ -33,9 +33,18 @@ app = FastAPI(
     redoc_url=None,
 )
 
-# --- Middleware Registration (LIFO Order) ---
+# --- Middleware Registration (LIFO Order: Last added is outermost) ---
 
-# 1. CORS Middleware (Outermost)
+# 2. Security Headers Middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
+# 3. Rate Limit Middleware
+app.add_middleware(RateLimitMiddleware)
+
+# 3. Tenant Middleware (Innermost)
+app.add_middleware(TenantMiddleware)
+
+# 4. CORS Middleware (Outermost - processes request first, response last)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.FRONTEND_URL],
@@ -44,15 +53,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# 2. Security Headers Middleware
-app.add_middleware(SecurityHeadersMiddleware)
-
-# 3. Rate Limit Middleware
-app.add_middleware(RateLimitMiddleware)
-
-# 4. Tenant Middleware (Innermost - closest to router)
-app.add_middleware(TenantMiddleware)
 
 
 # --- Router Registration ---
