@@ -25,8 +25,8 @@ class TenantMiddleware(BaseHTTPMiddleware):
         )
 
     async def dispatch(self, request: Request, call_next) -> Response:
-        # Skip tenant resolution for infrastructure paths
-        if request.url.path in SKIP_PATHS or request.url.path.startswith("/static"):
+        # Skip tenant resolution for infrastructure paths and CORS preflight
+        if request.method == "OPTIONS" or request.url.path in SKIP_PATHS or request.url.path.startswith("/static"):
             return await call_next(request)
 
         # 1. Extract tenant slug
@@ -64,10 +64,16 @@ class TenantMiddleware(BaseHTTPMiddleware):
 
     def _extract_tenant_slug(self, request: Request) -> str:
         """
-        Extract subdomain from Host header.
-        tr.example.com -> tr
-        localhost:8000 -> tr (default)
+        Extract tenant slug from X-Tenant-ID header or subdomain.
+        1. Priority: X-Tenant-ID header (sent by frontend)
+        2. Fallback: Subdomain from Host header
         """
+        # 1. Header Check
+        header_slug = request.headers.get("x-tenant-id")
+        if header_slug:
+            return header_slug
+
+        # 2. Host Subdomain Check
         host = request.headers.get("host", "")
         host = host.split(":")[0]  # Remove port
 
@@ -80,6 +86,10 @@ class TenantMiddleware(BaseHTTPMiddleware):
                 return parts[0]
             return DEFAULT_TENANT_SLUG
             
+        # Ignore platform subdomains (like onrender.com)
+        if "onrender.com" in host or "greenleaf-backend" in host:
+            return DEFAULT_TENANT_SLUG
+
         return parts[0]
 
     async def _resolve_tenant(self, slug: str) -> dict | None:
