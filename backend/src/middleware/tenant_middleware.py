@@ -75,7 +75,15 @@ class TenantMiddleware(BaseHTTPMiddleware):
 
         # 2. Host Subdomain Check
         host = request.headers.get("host", "")
-        host = host.split(":")[0]  # Remove port
+        host = host.split(":")[0].lower()  # Normalize and remove port
+
+        # Ignore platform subdomains (like onrender.com)
+        if "onrender.com" in host or "greenleaf-backend" in host:
+            return DEFAULT_TENANT_SLUG
+
+        # Handle 'www.' prefix
+        if host.startswith("www."):
+            host = host[4:]
 
         parts = host.split(".")
         
@@ -86,10 +94,6 @@ class TenantMiddleware(BaseHTTPMiddleware):
                 return parts[0]
             return DEFAULT_TENANT_SLUG
             
-        # Ignore platform subdomains (like onrender.com)
-        if "onrender.com" in host or "greenleaf-backend" in host:
-            return DEFAULT_TENANT_SLUG
-
         return parts[0]
 
     async def _resolve_tenant(self, slug: str) -> dict | None:
