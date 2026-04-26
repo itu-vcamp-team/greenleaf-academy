@@ -21,7 +21,8 @@ export default function SettingsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [pwdLoading, setPwdLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     full_name: "",
     phone: ""
@@ -47,7 +48,7 @@ export default function SettingsPage() {
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setProfileLoading(true);
     try {
       await apiClient.patch("/auth/profile", profileData);
       toast.success("Profil bilgileriniz güncellendi.");
@@ -55,7 +56,7 @@ export default function SettingsPage() {
     } catch (error: any) {
       toast.error(error.response?.data?.detail || "Güncelleme başarısız.");
     } finally {
-      setLoading(false);
+      setProfileLoading(false);
     }
   };
 
@@ -66,7 +67,7 @@ export default function SettingsPage() {
     const formData = new FormData();
     formData.append("file", file);
 
-    setLoading(true);
+    setProfileLoading(true);
     try {
       await apiClient.post("/auth/profile/avatar", formData);
       toast.success("Profil fotoğrafınız güncellendi.");
@@ -74,7 +75,7 @@ export default function SettingsPage() {
     } catch (error: any) {
       toast.error("Fotoğraf yüklenemedi.");
     } finally {
-      setLoading(false);
+      setProfileLoading(false);
     }
   };
 
@@ -84,7 +85,7 @@ export default function SettingsPage() {
       toast.error("Lütfen mevcut şifrenizi girin.");
       return;
     }
-    setLoading(true);
+    setPwdLoading(true);
     try {
       await apiClient.post("/auth/profile/password-reset/request", {
         current_password: pwdData.current_password
@@ -94,7 +95,7 @@ export default function SettingsPage() {
     } catch (error: any) {
       toast.error(error.response?.data?.detail || "Hata oluştu.");
     } finally {
-      setLoading(false);
+      setPwdLoading(false);
     }
   };
 
@@ -103,7 +104,7 @@ export default function SettingsPage() {
       toast.error("Şifreler eşleşmiyor.");
       return;
     }
-    setLoading(true);
+    setPwdLoading(true);
     try {
       await apiClient.post("/auth/profile/password-reset/verify", {
         otp_code: pwdData.otp_code,
@@ -112,11 +113,11 @@ export default function SettingsPage() {
       });
       toast.success("Şifreniz güncellendi. Yeniden giriş yapmalısınız.");
       logout();
-      router.push("/login");
+      router.push("/auth/login");
     } catch (error: any) {
       toast.error(error.response?.data?.detail || "Doğrulama hatası.");
     } finally {
-      setLoading(false);
+      setPwdLoading(false);
     }
   };
 
@@ -240,11 +241,11 @@ export default function SettingsPage() {
 
                 <div className="sm:col-span-2 pt-4">
                   <Button 
-                    disabled={loading}
+                    disabled={profileLoading}
                     type="submit"
                     className="rounded-2xl h-14 px-10 font-black bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20"
                   >
-                    {loading ? "GÜNCELLENİYOR..." : "DEĞİŞİKLİKLERİ KAYDET"}
+                    {profileLoading ? "GÜNCELLENİYOR..." : "DEĞİŞİKLİKLERİ KAYDET"}
                   </Button>
                 </div>
               </form>
@@ -294,8 +295,8 @@ export default function SettingsPage() {
                       onChange={(e) => setPwdData({...pwdData, current_password: e.target.value})}
                     />
                     <div className="flex gap-3">
-                      <Button className="rounded-xl h-12 bg-primary text-white px-8 font-bold" onClick={startPwdReset} disabled={loading}>
-                        {loading ? "GÖNDERİLİYOR..." : "OTP GÖNDER"}
+                      <Button className="rounded-xl h-12 bg-primary text-white px-8 font-bold" onClick={startPwdReset} disabled={pwdLoading}>
+                        {pwdLoading ? "GÖNDERİLİYOR..." : "DOĞRULAMA KODU GÖNDER"}
                       </Button>
                       <Button variant="ghost" className="rounded-xl h-12 font-bold" onClick={() => setPwdStep(0)}>İptal</Button>
                     </div>
@@ -306,38 +307,55 @@ export default function SettingsPage() {
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                     <div className="bg-primary/5 p-4 rounded-xl flex items-center gap-3 text-primary">
                       <AlertCircle size={18} />
-                      <p className="text-xs font-bold">Lütfen e-postanıza gelen 6 haneli kodu ve yeni şifrenizi girin.</p>
+                      <div>
+                        <p className="text-xs font-bold">Lütfen e-postanıza gelen 6 haneli kodu ve yeni şifrenizi girin.</p>
+                        <p className="text-[10px] opacity-70">Spam/Gereksiz klasörünü kontrol etmeyi unutmayın.</p>
+                      </div>
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input 
-                        placeholder="6 Haneli Kod"
-                        maxLength={6}
-                        className="rounded-2xl h-14 bg-gray-50 border-transparent text-center tracking-[0.5em] font-black text-xl"
-                        value={pwdData.otp_code}
-                        onChange={(e) => setPwdData({...pwdData, otp_code: e.target.value})}
-                      />
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Doğrulama Kodu</label>
+                        <Input 
+                          id="security_verify_code"
+                          name="security_verify_code"
+                          autoComplete="one-time-code"
+                          placeholder="000000"
+                          maxLength={6}
+                          className="rounded-2xl h-14 bg-gray-50 border-transparent text-center tracking-[0.5em] font-black text-xl"
+                          value={pwdData.otp_code}
+                          onChange={(e) => setPwdData({...pwdData, otp_code: e.target.value})}
+                        />
+                      </div>
                       <div className="hidden sm:block" />
                       
-                      <Input 
-                        type="password"
-                        placeholder="Yeni Şifre"
-                        className="rounded-2xl h-14 bg-gray-50 border-transparent"
-                        value={pwdData.new_password}
-                        onChange={(e) => setPwdData({...pwdData, new_password: e.target.value})}
-                      />
-                      <Input 
-                        type="password"
-                        placeholder="Yeni Şifre (Tekrar)"
-                        className="rounded-2xl h-14 bg-gray-50 border-transparent"
-                        value={pwdData.confirm_new_password}
-                        onChange={(e) => setPwdData({...pwdData, confirm_new_password: e.target.value})}
-                      />
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Yeni Şifre</label>
+                        <Input 
+                          type="password"
+                          autoComplete="new-password"
+                          placeholder="••••••••"
+                          className="rounded-2xl h-14 bg-gray-50 border-transparent"
+                          value={pwdData.new_password}
+                          onChange={(e) => setPwdData({...pwdData, new_password: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Yeni Şifre (Tekrar)</label>
+                        <Input 
+                          type="password"
+                          autoComplete="new-password"
+                          placeholder="••••••••"
+                          className="rounded-2xl h-14 bg-gray-50 border-transparent"
+                          value={pwdData.confirm_new_password}
+                          onChange={(e) => setPwdData({...pwdData, confirm_new_password: e.target.value})}
+                        />
+                      </div>
                     </div>
 
                     <div className="flex gap-3">
-                      <Button className="rounded-xl h-12 bg-primary text-white px-8 font-bold" onClick={verifyAndChangePwd} disabled={loading}>
-                        {loading ? "İŞLENİYOR..." : "ŞİFREYİ GÜNCELLE"}
+                      <Button className="rounded-xl h-12 bg-primary text-white px-8 font-bold" onClick={verifyAndChangePwd} disabled={pwdLoading}>
+                        {pwdLoading ? "İŞLENİYOR..." : "ŞİFREYİ GÜNCELLE"}
                       </Button>
                       <Button variant="ghost" className="rounded-xl h-12 font-bold" onClick={() => setPwdStep(0)}>İptal</Button>
                     </div>

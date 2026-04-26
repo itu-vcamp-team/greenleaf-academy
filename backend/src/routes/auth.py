@@ -57,6 +57,7 @@ async def verify_token_and_get_user(current_user: User = Depends(get_current_use
         "full_name": current_user.full_name,
         "role": current_user.role.value,
         "partner_id": current_user.partner_id,
+        "phone": current_user.phone,
         "profile_image_path": current_user.profile_image_path
     }
 
@@ -503,18 +504,27 @@ async def reset_password(
     data: ResetPasswordSchema,
     db: AsyncSession = Depends(get_db_session)
 ):
-    """Verifies OTP and resets password."""
-    if not await OTPService.verify_otp(str(data.user_id), data.code, purpose="password_reset"):
-        raise HTTPException(status_code=400, detail="Invalid or expired reset code.")
-
-    stmt = select(User).where(User.id == data.user_id)
+    """Verifies OTP and resets password using email."""
+    # 1. Find User
+    stmt = select(User).where(User.email == data.email)
     res = await db.execute(stmt)
-    user = res.scalar_one()
+    user = res.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
 
+    # 2. Verify OTP
+    if not await OTPService.verify_otp(str(user.id), data.code, purpose="password_reset"):
+        raise HTTPException(status_code=400, detail="Geçersiz veya süresi dolmuş doğrulama kodu.")
+
+    # 3. Update Password
     user.password_hash = PasswordService.hash_password(data.new_password)
+    
+    # 4. Global Logout for security
+    await SessionService.deactivate_all_user_sessions(db, user.id)
+    
     await db.commit()
-
-    return {"message": "Password reset successfully."}
+    return {"message": "Şifreniz başarıyla sıfırlandı. Yeni şifrenizle giriş yapabilirsiniz."}
 
 
 # --- PROFILE ---
@@ -595,7 +605,7 @@ async def request_password_change(
     otp = await OTPService.generate_otp(f"pwd_change:{current_user.id}", purpose="password_change")
     
     background_tasks.add_task(
-        MailingService.send_password_reset_email, # Reusing reset template or could use a specific one
+        MailingService.send_password_reset_email,
         to_email=current_user.email,
         code=otp,
         full_name=current_user.full_name

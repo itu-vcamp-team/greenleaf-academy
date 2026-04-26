@@ -94,9 +94,24 @@ class MailingService:
 
     @staticmethod
     async def send_password_reset_email(to_email: str, code: str, full_name: str) -> bool:
-        """Sends OTP for password reset."""
-        html = f"<div>Şifre sıfırlama kodunuz: {code}</div>"
-        return await MailingService._send_email(to_email, "Şifre Sıfırlama", html)
+        """Sends branded OTP for password reset or secure change."""
+        html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #4AA435;">Greenleaf Akademi – Güvenlik Doğrulaması</h2>
+          <p>Merhaba <strong>{full_name}</strong>,</p>
+          <p>Hesabınız için bir şifre sıfırlama veya şifre değiştirme talebinde bulunuldu. Lütfen aşağıdaki 6 haneli kodu kullanın:</p>
+          <div style="background: #f0f9f4; border: 2px solid #4AA435; border-radius: 8px;
+                      padding: 20px; text-align: center; margin: 20px 0;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px;
+                         color: #4AA435;">{code}</span>
+          </div>
+          <p style="color: #666;">Bu işlem size ait değilse lütfen bu e-postayı dikkate almayın.</p>
+          <div style="background: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #999; margin-top: 20px;">
+            © 2026 Greenleaf Akademi. Tüm hakları saklıdır.
+          </div>
+        </div>
+        """
+        return await MailingService._send_email(to_email, "Güvenlik Doğrulama Kodunuz", html)
 
     @staticmethod
     async def send_calendar_invite_email(to_email: str, event_title: str, ics_content: str) -> bool:

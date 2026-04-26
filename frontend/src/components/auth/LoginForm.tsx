@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { ShieldCheck, User, Lock, Key, CheckCircle2, AlertCircle, RefreshCcw } from "lucide-react";
+import { ShieldCheck, User, Lock, Key, CheckCircle2, AlertCircle, RefreshCcw, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "@/i18n/navigation";
 import apiClient from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth.store";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 export function LoginForm() {
   const t = useTranslations("auth");
@@ -29,6 +30,11 @@ export function LoginForm() {
   });
 
   const [otpCode, setOtpCode] = useState("");
+  
+  // Forgot Password States
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotStep, setForgotStep] = useState(1); // 1: Email, 2: Code & New Pwd
+  const [forgotData, setForgotData] = useState({ email: "", code: "", new_password: "", confirm_password: "" });
 
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -65,7 +71,6 @@ export function LoginForm() {
         setShow2FA(true);
       } else {
         const { tokens } = res.data;
-        // Verify User profile via verify-global immediately after login
         const profileRes = await apiClient.get("/auth/verify-global", {
           headers: { Authorization: `Bearer ${tokens.access_token}` }
         });
@@ -75,7 +80,7 @@ export function LoginForm() {
       }
     } catch (err: any) {
       setError(err.response?.data?.detail || "Giriş başarısız. Bilgilerinizi kontrol edin.");
-      fetchCaptcha(); // Refresh captcha on error
+      fetchCaptcha();
     } finally {
       setLoading(false);
     }
@@ -106,10 +111,130 @@ export function LoginForm() {
     }
   };
 
+  const handleForgotRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      await apiClient.post("/auth/forgot-password", null, { params: { email: forgotData.email } });
+      setForgotStep(2);
+      toast.success("Sıfırlama kodu e-postanıza gönderildi.");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Hata oluştu.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (forgotData.new_password !== forgotData.confirm_password) {
+      setError("Şifreler eşleşmiyor.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await apiClient.post("/auth/reset-password", {
+        email: forgotData.email,
+        code: forgotData.code,
+        new_password: forgotData.new_password
+      });
+      toast.success("Şifreniz başarıyla sıfırlandı.");
+      setShowForgot(false);
+      setForgotStep(1);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Sıfırlama başarısız.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-md">
       <AnimatePresence mode="wait">
-        {!show2FA ? (
+        {showForgot ? (
+          <motion.div
+            key="forgot"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+          >
+            <GlassCard className="p-8 border-foreground/5">
+              <div className="text-center mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4 border border-amber-500/20 text-amber-500">
+                  <Key className="w-6 h-6" />
+                </div>
+                <h1 className="text-2xl font-bold mb-2">Şifremi Unuttum</h1>
+                <p className="text-foreground/40 text-sm italic">Güvenli bir şekilde yeni şifre belirleyin.</p>
+              </div>
+
+              {forgotStep === 1 ? (
+                <form onSubmit={handleForgotRequest} className="space-y-6">
+                  <Input
+                    label="E-posta Adresi"
+                    type="email"
+                    placeholder="ornek@mail.com"
+                    icon={<Mail size={16} className="text-foreground/40" />}
+                    value={forgotData.email}
+                    onChange={(e) => setForgotData({ ...forgotData, email: e.target.value })}
+                    required
+                  />
+                  <Button type="submit" className="w-full h-14 font-black" disabled={loading}>
+                    {loading ? "GÖNDERİLİYOR..." : "SIFIRLAMA KODU GÖNDER"}
+                  </Button>
+                  <button type="button" onClick={() => setShowForgot(false)} className="w-full text-xs text-foreground/40 hover:text-foreground transition-colors">Vazgeç</button>
+                </form>
+              ) : (
+                <form onSubmit={handleResetSubmit} className="space-y-4">
+                  <div className="bg-primary/5 p-4 rounded-xl flex items-center gap-3 text-primary mb-4">
+                    <AlertCircle size={18} />
+                    <p className="text-xs font-bold">E-postanıza gelen 6 haneli kodu ve yeni şifrenizi girin.</p>
+                  </div>
+                  <Input
+                    label="Doğrulama Kodu"
+                    placeholder="000000"
+                    id="forgot-verification-code"
+                    name="forgot-verification-code"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    className="text-center tracking-widest font-black"
+                    value={forgotData.code}
+                    onChange={(e) => setForgotData({ ...forgotData, code: e.target.value })}
+                    required
+                  />
+                  <Input
+                    label="Yeni Şifre"
+                    type="password"
+                    placeholder="••••••••"
+                    value={forgotData.new_password}
+                    onChange={(e) => setForgotData({ ...forgotData, new_password: e.target.value })}
+                    required
+                  />
+                  <Input
+                    label="Yeni Şifre (Tekrar)"
+                    type="password"
+                    placeholder="••••••••"
+                    value={forgotData.confirm_password}
+                    onChange={(e) => setForgotData({ ...forgotData, confirm_password: e.target.value })}
+                    required
+                  />
+                  <Button type="submit" className="w-full h-14 font-black" disabled={loading}>
+                    {loading ? "ŞİFREYİ SIFIRLA..." : "ŞİFREYİ GÜNCELLE"}
+                  </Button>
+                  <button type="button" onClick={() => setForgotStep(1)} className="w-full text-xs text-foreground/40 hover:text-foreground transition-colors">Geri Dön</button>
+                </form>
+              )}
+
+              {error && (
+                <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs italic mt-4">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {error}
+                </div>
+              )}
+            </GlassCard>
+          </motion.div>
+        ) : !show2FA ? (
           <motion.div
             key="login"
             initial={{ opacity: 0, y: 20 }}
@@ -134,15 +259,24 @@ export function LoginForm() {
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   required
                 />
-                <Input
-                  label={t("password")}
-                  type="password"
-                  placeholder="••••••••"
-                  icon={<Lock className="w-4 h-4" />}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    label={t("password")}
+                    type="password"
+                    placeholder="••••••••"
+                    icon={<Lock className="w-4 h-4" />}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowForgot(true)}
+                    className="absolute right-1 top-0 text-[10px] font-black uppercase tracking-tighter text-primary/40 hover:text-primary transition-colors"
+                  >
+                    Şifremi Unuttum
+                  </button>
+                </div>
 
                 {captcha && (
                   <div className="space-y-2">

@@ -10,6 +10,7 @@ import { useThemeStore } from "@/store/theme.store";
 import { Sun, Moon, Calendar, LayoutDashboard, Settings, User, LogOut, Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export function Navbar() {
   const t = useTranslations("nav");
@@ -18,6 +19,7 @@ export function Navbar() {
   const { role } = useUserRole();
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const router = useRouter();
+  const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isGuest = role === "GUEST";
@@ -41,25 +43,30 @@ export function Navbar() {
       <motion.nav 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="fixed top-0 inset-x-0 z-[70] p-4"
+        className="fixed top-0 inset-x-0 z-[70] p-4 pointer-events-none"
       >
-        <div className="max-w-7xl mx-auto glass rounded-2xl px-6 py-3 flex items-center justify-between">
-          <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
+        <div className="max-w-7xl mx-auto glass rounded-full px-4 md:px-8 py-2.5 flex items-center justify-between pointer-events-auto border-white/10 shadow-2xl shadow-black/5">
+          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="shrink-0">
             <BrandLogo />
           </Link>
           
-          <div className="hidden md:flex items-center gap-8 text-foreground/80">
+          <div className="hidden lg:flex items-center gap-1 xl:gap-2 text-foreground/70">
             {navLinks.map((link) => (
-              <NavLink key={`${link.href}-${link.label}`} href={link.href} icon={link.icon}>
+              <NavLink 
+                key={`${link.href}-${link.label}`} 
+                href={link.href} 
+                icon={link.icon}
+                active={pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href))}
+              >
                 {link.label}
               </NavLink>
             ))}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4 shrink-0">
             <button 
               onClick={toggleTheme}
-              className="p-2 rounded-xl bg-primary/5 border border-primary/20 text-primary hover:bg-primary/10 transition-colors"
+              className="p-2.5 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/60 transition-all active:scale-95"
             >
               {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
@@ -68,25 +75,25 @@ export function Navbar() {
               {isGuest ? (
                 <>
                   <Link href="/auth/login">
-                    <Button variant="ghost" size="sm" className="rounded-xl">{authT("login")}</Button>
+                    <Button variant="ghost" size="sm" className="rounded-full px-6">{authT("login")}</Button>
                   </Link>
                   <Link href="/auth/register">
-                    <Button size="sm" className="rounded-xl">{authT("register")}</Button>
+                    <Button size="sm" className="rounded-full px-6 shadow-lg shadow-primary/20">{authT("register")}</Button>
                   </Link>
                 </>
               ) : (
                 <div className="flex items-center gap-2">
                   <Link href="/dashboard">
-                    <Button size="sm" className="gap-2 rounded-xl">
+                    <Button size="sm" className="gap-2 rounded-full px-6 shadow-lg shadow-primary/20">
                       <User className="w-4 h-4" />
-                      {authT("profile") || "Profilim"}
+                      <span className="max-w-[100px] truncate">{authT("profile") || "Profilim"}</span>
                     </Button>
                   </Link>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={handleLogout}
-                    className="p-2 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-500 transition-colors"
+                    className="p-2.5 rounded-full text-red-500/60 hover:bg-red-500/10 hover:text-red-500 transition-all active:scale-95"
                   >
                     <LogOut className="w-4 h-4" />
                   </Button>
@@ -95,7 +102,7 @@ export function Navbar() {
             </div>
 
             <button 
-              className="md:hidden p-2 text-foreground/60 hover:text-primary transition-colors flex items-center justify-center"
+              className="lg:hidden p-2.5 rounded-full bg-foreground/5 text-foreground/60 hover:text-primary transition-all active:scale-95 flex items-center justify-center"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -107,20 +114,20 @@ export function Navbar() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, x: "100%" }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: "100%" }}
-            className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-xl md:hidden flex flex-col p-8 pt-24"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed inset-4 z-[60] glass rounded-[2.5rem] md:hidden flex flex-col p-8 pt-24 shadow-2xl"
           >
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
                 <Link 
                   key={`${link.href}-${link.label}`} 
                   href={link.href} 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-2xl font-black italic tracking-tighter hover:text-primary transition-colors flex items-center gap-4"
+                  className="text-2xl font-bold tracking-tight hover:text-primary transition-colors flex items-center gap-5 p-4 rounded-3xl hover:bg-primary/5 group"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <div className="w-12 h-12 rounded-2xl bg-foreground/5 flex items-center justify-center text-foreground/40 group-hover:bg-primary/10 group-hover:text-primary transition-all">
                     {link.icon || <div className="w-4 h-4 border-2 border-current rounded-full" />}
                   </div>
                   {link.label}
@@ -131,17 +138,17 @@ export function Navbar() {
             <div className="mt-auto space-y-4">
               {isGuest ? (
                 <div className="grid grid-cols-2 gap-4">
-                  <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full py-6 rounded-2xl border-foreground/10 uppercase text-[10px] font-black tracking-widest">{authT("login")}</Button>
+                  <Link href="/auth/login" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="outline" className="w-full py-7 rounded-3xl border-foreground/10 text-xs font-black uppercase tracking-widest">{authT("login")}</Button>
                   </Link>
-                  <Link href="/auth/register" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button className="w-full py-6 rounded-2xl uppercase text-[10px] font-black tracking-widest">{authT("register")}</Button>
+                  <Link href="/auth/register" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button className="w-full py-7 rounded-3xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20">{authT("register")}</Button>
                   </Link>
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
-                  <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button className="w-full py-6 rounded-2xl gap-3 text-sm font-black italic tracking-tight">
+                  <Link href="/dashboard" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button className="w-full py-7 rounded-3xl gap-3 text-sm font-bold shadow-xl shadow-primary/20">
                        <User className="w-5 h-5" /> {authT("profile") || "Profilim"}
                     </Button>
                   </Link>
@@ -151,7 +158,7 @@ export function Navbar() {
                         setIsMobileMenuOpen(false);
                         handleLogout();
                     }}
-                    className="w-full py-6 rounded-2xl text-red-400 hover:bg-red-500/10 gap-3 text-sm font-black tracking-tight"
+                    className="w-full py-7 rounded-3xl text-red-500/60 hover:bg-red-500/10 gap-3 text-sm font-bold"
                   >
                     <LogOut className="w-5 h-5" /> {t("logout")}
                   </Button>
@@ -165,14 +172,27 @@ export function Navbar() {
   );
 }
 
-function NavLink({ href, icon, children }: { href: string; icon?: React.ReactNode; children: React.ReactNode }) {
+function NavLink({ href, icon, children, active }: { href: string; icon?: React.ReactNode; children: React.ReactNode, active?: boolean }) {
   return (
     <Link 
       href={href} 
-      className="text-sm font-semibold text-foreground/60 hover:text-primary transition-colors flex items-center gap-2 shadow-sm"
+      className={`relative px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 group overflow-hidden ${
+        active 
+          ? "text-primary bg-primary/5" 
+          : "hover:text-primary text-foreground/50 hover:bg-primary/5"
+      }`}
     >
-      {icon}
+      <span className={`transition-transform duration-300 ${active ? "scale-110" : "group-hover:scale-110"}`}>
+        {icon}
+      </span>
       {children}
+      {active && (
+        <motion.div 
+          layoutId="nav-active"
+          className="absolute inset-0 bg-primary/5 -z-10"
+          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+        />
+      )}
     </Link>
   );
 }

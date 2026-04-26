@@ -35,7 +35,8 @@ class RegisterStep3Schema(BaseModel):
     def validate_phone(cls, v: Optional[str]) -> Optional[str]:
         if v is None or v == "":
             return None
-        cleaned = str(v).strip()
+        # Strip all whitespace
+        cleaned = "".join(str(v).split())
         if not re.match(r'^\+90[0-9]{10}$', cleaned):
             raise ValueError(
                 "Telefon numarası +90XXXXXXXXXX formatında olmalıdır. Örnek: +905551234567"
@@ -127,7 +128,8 @@ class ProfileUpdateSchema(BaseModel):
     def validate_phone(cls, v: Optional[str]) -> Optional[str]:
         if v is None or v == "":
             return None
-        cleaned = str(v).strip()
+        # Strip all whitespace
+        cleaned = "".join(str(v).split())
         if not re.match(r'^\+90[0-9]{10}$', cleaned):
             raise ValueError(
                 "Telefon numarası +90XXXXXXXXXX formatında olmalıdır. Örnek: +905551234567"
@@ -166,7 +168,7 @@ class PasswordChangeVerifySchema(BaseModel):
 
 
 class ResetPasswordSchema(BaseModel):
-    user_id: uuid.UUID
+    email: EmailStr
     code: str
     new_password: str
 

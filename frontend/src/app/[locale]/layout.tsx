@@ -5,6 +5,8 @@ import { UserRoleProvider } from "@/context/UserRoleContext";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 
+import { Toaster } from "sonner";
+
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export default async function LocaleLayout(props: {
@@ -28,6 +30,7 @@ export default async function LocaleLayout(props: {
       <body className={`${inter.variable} antialiased selection:bg-primary/30`}>
         <NextIntlClientProvider messages={messages}>
           <UserRoleProvider>
+            <Toaster richColors position="top-right" />
             <main className="min-h-screen bg-background">{children}</main>
           </UserRoleProvider>
         </NextIntlClientProvider>

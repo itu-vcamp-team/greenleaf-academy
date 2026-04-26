@@ -57,6 +57,11 @@ class SessionService:
 
     @staticmethod
     async def deactivate_session(db: AsyncSession, jti: str):
-        """Deactivates a specific session (Logout)."""
+        """Sets a session's is_active to False."""
         stmt = update(UserSession).where(UserSession.token_jti == jti).values(is_active=False)
+        await db.execute(stmt)
+    @staticmethod
+    async def deactivate_all_user_sessions(db: AsyncSession, user_id: uuid.UUID):
+        """Deactivates all active sessions for a specific user (Global Logout)."""
+        stmt = update(UserSession).where(UserSession.user_id == user_id).values(is_active=False)
         await db.execute(stmt)
