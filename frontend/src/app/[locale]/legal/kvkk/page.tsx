@@ -22,8 +22,8 @@ export default function KVKKPage() {
           <section className="space-y-4">
             <h2 className="text-xl font-black text-gray-900 border-l-4 border-primary pl-4">1. Veri Sorumlusu</h2>
             <p>
-              Greenleaf Akademi olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, 
-              verilerinizin güvenliğini en üst seviyede tutuyoruz. Bu metin, platformumuzu kullanırken 
+              Greenleaf Akademi olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu (&ldquo;KVKK&rdquo;) uyarınca,
+              verilerinizin güvenliğini en üst seviyede tutuyoruz. Bu metin, platformumuzu kullanırken
               toplanan verilerinizin nasıl işlendiği ve korunduğu hakkında sizi bilgilendirmek amacıyla hazırlanmıştır.
             </p>
           </section>
@@ -35,32 +35,58 @@ export default function KVKKPage() {
               <li>İletişim Bilgileri (E-posta adresi, Telefon numarası)</li>
               <li>Eğitim Verileri (İzlenen videolar, tamamlanan eğitimler, puanlar)</li>
               <li>Sistem Kayıtları (IP adresi, tarayıcı bilgileri, giriş zamanları)</li>
+              <li>
+                <strong>Etkinlik Takvim İstekleri:</strong> Bir etkinliği takviminize eklemek istediğinizde
+                sağladığınız ad-soyad (isteğe bağlı) ve e-posta adresi. Bu veri etkinlik davetiyesi
+                göndermek ve etkinlik ilgi analizleri yapmak amacıyla işlenmektedir.
+              </li>
             </ul>
           </section>
 
           <section className="space-y-4">
             <h2 className="text-xl font-black text-gray-900 border-l-4 border-primary pl-4">3. İşleme Amaçları</h2>
             <p>
-              Toplanan verileriniz; platform üyelik işlemlerinin tamamlanması, eğitim süreçlerinin takibi, 
-              size özel içeriklerin sunulması ve yasal yükümlülüklerin yerine getirilmesi amacıyla işlenmektedir.
+              Toplanan verileriniz; platform üyelik işlemlerinin tamamlanması, eğitim süreçlerinin takibi,
+              size özel içeriklerin sunulması, etkinlik davetiyelerinin iletilmesi ve yasal yükümlülüklerin
+              yerine getirilmesi amacıyla işlenmektedir.
+            </p>
+            <p>
+              Etkinlik takvim daveti kapsamında sağlanan e-posta adresi; yalnızca talep edilen takvim
+              davetiyesinin gönderilmesi ve ilgili etkinlik hakkında bilgilendirme amacıyla kullanılır.
+              KVKK madde 5/f bendi uyarınca <em>meşru menfaat</em> hukuki sebebine dayanılmaktadır.
             </p>
           </section>
 
           <section className="space-y-4">
             <h2 className="text-xl font-black text-gray-900 border-l-4 border-primary pl-4">4. Veri Aktarımı</h2>
             <p>
-              Kişisel verileriniz, yasal zorunluluklar haricinde asla üçüncü şahıslarla paylaşılmaz. 
-              Sadece Greenleaf Global ekosistemi içerisindeki doğrulama süreçleri için gerekli olan 
-              asgari veriler ilgili birimlerle paylaşılabilir.
+              Kişisel verileriniz, yasal zorunluluklar haricinde asla üçüncü şahıslarla paylaşılmaz.
+              Sadece Greenleaf Global ekosistemi içerisindeki doğrulama süreçleri için gerekli olan
+              asgari veriler ilgili birimlerle paylaşılabilir. E-posta gönderimi için Resend Inc.
+              altyapısı kullanılmakta olup bu aktarım KVKK&apos;nın 9. maddesi kapsamında gerekli
+              güvencelerle gerçekleştirilmektedir.
             </p>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-black text-gray-900 border-l-4 border-primary pl-4">5. Haklarınız</h2>
+            <h2 className="text-xl font-black text-gray-900 border-l-4 border-primary pl-4">5. Veri Saklama Süresi</h2>
             <p>
-              KVKK'nın 11. maddesi uyarınca; verilerinizin işlenip işlenmediğini öğrenme, işlenmişse bilgi talep etme, 
-              düzeltilmesini veya silinmesini isteme haklarına sahipsiniz. Taleplerinizi profil ayarlarınız 
-              üzerinden veya iletişim kanallarımızdan bize iletebilirsiniz.
+              Üyelik verileri hesap aktif olduğu süre boyunca saklanır. Etkinlik takvim isteklerine
+              ilişkin e-posta ve isim bilgileri, ilgili etkinlik tarihinden itibaren <strong>6 ay</strong> sonra
+              otomatik olarak sistemden kaldırılır veya talep üzerine daha erken silinir.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-black text-gray-900 border-l-4 border-primary pl-4">6. Haklarınız</h2>
+            <p>
+              KVKK&apos;nın 11. maddesi uyarınca; verilerinizin işlenip işlenmediğini öğrenme, işlenmişse
+              bilgi talep etme, düzeltilmesini veya silinmesini isteme haklarına sahipsiniz. Taleplerinizi
+              profil ayarlarınız üzerinden veya{" "}
+              <a href="mailto:noreply@greenleafakademi.com" className="text-primary underline hover:opacity-80">
+                noreply@greenleafakademi.com
+              </a>{" "}
+              adresine e-posta göndererek iletebilirsiniz.
             </p>
           </section>
 

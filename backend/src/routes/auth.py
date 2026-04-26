@@ -19,7 +19,7 @@ from src.datalayer.model.dto.auth_dto import (
 )
 from src.services import (
     OTPService, GreenleafGlobalService, SessionService,
-    MailingService, DeviceService
+    MailingService, DeviceService, CaptchaService
 )
 from src.config import get_settings
 from src.logger import logger

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import {
   Plus, Trash2, Pencil, Calendar, Loader2,
   Globe, Lock, Video, Users, Briefcase, MapPin,
-  CheckCircle, Send,
+  CheckCircle, Send, CalendarCheck, X, UserCheck, UserX,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "@/lib/api-client";
@@ -28,6 +28,14 @@ interface CalendarEvent {
   contact_info: string | null;
   visibility: EventVisibility;
   is_published?: boolean;
+}
+
+interface RsvpItem {
+  id: string;
+  email: string;
+  full_name: string | null;
+  is_member: boolean;
+  created_at: string;
 }
 
 const emptyForm = {
@@ -66,6 +74,11 @@ export default function AdminEventsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
 
+  // RSVP modal state
+  const [rsvpModal, setRsvpModal] = useState<{ eventId: string; title: string } | null>(null);
+  const [rsvps, setRsvps] = useState<RsvpItem[]>([]);
+  const [loadingRsvp, setLoadingRsvp] = useState(false);
+
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -79,6 +92,20 @@ export default function AdminEventsPage() {
       console.error("Failed to fetch events");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openRsvpModal = async (event: CalendarEvent) => {
+    setRsvpModal({ eventId: event.id, title: event.title });
+    setRsvps([]);
+    setLoadingRsvp(true);
+    try {
+      const res = await apiClient.get(`/events/${event.id}/calendar-rsvps`);
+      setRsvps(res.data);
+    } catch {
+      setRsvps([]);
+    } finally {
+      setLoadingRsvp(false);
     }
   };
 
@@ -141,7 +168,7 @@ export default function AdminEventsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Bu etkinliği silmek istediğinize emin misiniz?")) return;
+    if (!confirm("Bu etkinliği silmek istediğinize emin misiniz? Tüm takvim davetleri de silinecek.")) return;
     setDeletingId(id);
     try {
       await apiClient.delete(`/events/${id}`);
@@ -215,7 +242,7 @@ export default function AdminEventsPage() {
                           {" · "}
                           <span className="font-bold">{CATEGORY_LABELS[event.category]}</span>
                         </p>
-                        <div className="flex items-center gap-2 mt-1.5">
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           {event.visibility === "ALL" ? (
                             <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
                               <Globe size={9} /> Herkese Açık
@@ -234,7 +261,19 @@ export default function AdminEventsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                      {/* RSVP list button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50"
+                        onClick={() => openRsvpModal(event)}
+                        title="Takvim davet isteklerini gör"
+                      >
+                        <CalendarCheck size={12} />
+                        Takvim İstekleri
+                      </Button>
+
                       {event.is_published === false && (
                         <Button
                           variant="outline"
@@ -281,7 +320,7 @@ export default function AdminEventsPage() {
         </div>
       )}
 
-      {/* Create / Edit Modal */}
+      {/* ── Create / Edit Modal ── */}
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -420,6 +459,89 @@ export default function AdminEventsPage() {
                     </Button>
                   </div>
                 </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── RSVP Modal ── */}
+      <AnimatePresence>
+        {rsvpModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={(e) => e.target === e.currentTarget && setRsvpModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
+            >
+              {/* Header */}
+              <div className="px-8 py-6 border-b border-gray-100 flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-blue-600 mb-1">
+                    <CalendarCheck size={16} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Takvim İstekleri</span>
+                  </div>
+                  <h2 className="text-xl font-black text-gray-900 leading-tight line-clamp-2">
+                    {rsvpModal.title}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setRsvpModal(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 mt-1"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto px-8 py-6">
+                {loadingRsvp ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 size={24} className="animate-spin text-primary" />
+                  </div>
+                ) : rsvps.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CalendarCheck size={40} className="mx-auto text-gray-200 mb-3" />
+                    <p className="text-gray-400 italic text-sm">Henüz takvim isteği yok.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
+                      Toplam {rsvps.length} kişi takvime ekledi
+                    </p>
+                    {rsvps.map((rsvp) => (
+                      <div
+                        key={rsvp.id}
+                        className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50 hover:border-primary/20 transition-colors"
+                      >
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${rsvp.is_member ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-500"}`}>
+                          {rsvp.is_member ? <UserCheck size={14} /> : <UserX size={14} />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {rsvp.full_name && (
+                            <p className="text-sm font-bold text-gray-800 truncate">{rsvp.full_name}</p>
+                          )}
+                          <p className="text-xs text-gray-500 truncate">{rsvp.email}</p>
+                        </div>
+                        <div className="flex-shrink-0 text-right">
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${rsvp.is_member ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-600"}`}>
+                            {rsvp.is_member ? "Üye" : "Misafir"}
+                          </span>
+                          <p className="text-[9px] text-gray-400 mt-1">
+                            {new Date(rsvp.created_at).toLocaleDateString("tr-TR")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>

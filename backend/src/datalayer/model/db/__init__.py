@@ -6,6 +6,7 @@ from .academy_content import AcademyContent, ContentType, ContentStatus
 from .user_progress import UserProgress
 from .favorite import Favorite
 from .event import Event, EventCategory, EventVisibility
+from .event_calendar_rsvp import EventCalendarRsvp
 from .announcement import Announcement
 from .resource_link import ResourceLink
 from .user_device import UserDevice
@@ -27,6 +28,7 @@ __all__ = [
     "Event",
     "EventCategory",
     "EventVisibility",
+    "EventCalendarRsvp",
     "Announcement",
     "ResourceLink",
     "AuditLog",

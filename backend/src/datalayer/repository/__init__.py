@@ -5,6 +5,7 @@ from .user_session_repository import UserSessionRepository
 from .academy_repository import AcademyRepository
 from .progress_repository import ProgressRepository
 from .event_repository import EventRepository
+from .event_calendar_rsvp_repository import EventCalendarRsvpRepository
 from .favorite_repository import FavoriteRepository
 from .reference_code_repository import ReferenceCodeRepository
 from .announcement_repository import AnnouncementRepository
@@ -20,6 +21,7 @@ __all__ = [
     "AcademyRepository",
     "ProgressRepository",
     "EventRepository",
+    "EventCalendarRsvpRepository",
     "FavoriteRepository",
     "ReferenceCodeRepository",
     "AnnouncementRepository",

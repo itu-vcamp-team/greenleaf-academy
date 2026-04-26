@@ -3,24 +3,17 @@
 import { Navbar } from "@/components/ui/Navbar";
 import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { ChevronRight, Clock, Shield, Target, Plus, Calendar, Users } from "lucide-react";
+import { ChevronRight, Shield, Target, Plus, Calendar, Users } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
 import { useUserRole } from "@/context/UserRoleContext";
 import { motion } from "framer-motion";
 import React, { useState, useEffect } from "react";
 import apiClient from "@/lib/api-client";
 import ContentCard from "@/components/academy/ContentCard";
+import { NextMeetingCounter } from "@/components/dashboard/NextMeetingCounter";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
-}
-
-interface UpcomingEvent {
-  id: string;
-  title: string;
-  start_time: string;
-  contact_info?: string | null;
 }
 
 interface AcademyPreviewItem {
@@ -33,52 +26,20 @@ interface AcademyPreviewItem {
   is_new: boolean;
 }
 
-function getTimeLeft(targetDate: Date) {
-  const diff = targetDate.getTime() - Date.now();
-  if (diff <= 0) return { hours: 0, minutes: 0, seconds: 0 };
-  const totalSeconds = Math.floor(diff / 1000);
-  return {
-    hours: Math.floor(totalSeconds / 3600),
-    minutes: Math.floor((totalSeconds % 3600) / 60),
-    seconds: totalSeconds % 60,
-  };
-}
-
 export default function Home({ params }: PageProps) {
   const { locale } = React.use(params);
-  const t = useTranslations();
   const { role } = useUserRole();
   const router = useRouter();
 
-  const [nextEvent, setNextEvent] = useState<UpcomingEvent | null>(null);
-  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [previewContents, setPreviewContents] = useState<AcademyPreviewItem[]>([]);
   const [previewLoading, setPreviewLoading] = useState(true);
 
-  // Redirect if logged in
+  // Redirect logged-in users to their dashboard
   useEffect(() => {
     if (role !== "GUEST") {
       router.replace("/dashboard");
     }
   }, [role, router]);
-
-  // Fetch next upcoming event (public — guests can see title/time)
-  useEffect(() => {
-    apiClient
-      .get("/events/?limit=1")
-      .then((res) => {
-        const events: UpcomingEvent[] = res.data;
-        if (events.length > 0) {
-          setNextEvent(events[0]);
-          setTimeLeft(getTimeLeft(new Date(events[0].start_time)));
-        }
-      })
-      .catch(() => {
-        // Fallback: show a placeholder countdown from now + 14h
-        const fallback = new Date(Date.now() + 14 * 3600 * 1000);
-        setTimeLeft(getTimeLeft(fallback));
-      });
-  }, []);
 
   // Fetch real academy content for the preview section
   useEffect(() => {
@@ -93,20 +54,12 @@ export default function Home({ params }: PageProps) {
       .finally(() => setPreviewLoading(false));
   }, []);
 
-  // Live countdown ticker
-  useEffect(() => {
-    if (!nextEvent) return;
-    const target = new Date(nextEvent.start_time);
-    const timer = setInterval(() => setTimeLeft(getTimeLeft(target)), 1000);
-    return () => clearInterval(timer);
-  }, [nextEvent]);
-
   const isTR = locale.startsWith("tr");
 
   return (
     <div className="relative min-h-screen pb-20 overflow-x-hidden">
       <Navbar />
-      
+
       {/* Background Decor */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-primary/5 rounded-full blur-[140px]" />
@@ -115,60 +68,13 @@ export default function Home({ params }: PageProps) {
 
       <div className="pt-32 px-6">
         <div className="max-w-7xl mx-auto">
-          
-          {/* GLOBAL COUNTDOWN HOOK */}
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-4xl mx-auto mb-16"
-          >
-            <div className="relative glass rounded-[2.5rem] p-8 md:p-10 overflow-hidden border-primary/10 shadow-xl shadow-primary/5">
-              <div className="absolute top-0 right-0 p-8 opacity-5">
-                <Clock className="w-40 h-40" />
-              </div>
-              
-              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
-                <div className="text-center md:text-left">
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-3">
-                    {isTR ? "Sıradaki Canlı Eğitim" : "Next Live Session"}
-                  </p>
-                  <h3 className="text-3xl font-bold mb-2 tracking-tight">
-                    {nextEvent?.title ?? (isTR ? "Yakında Duyurulacak" : "Coming Soon")}
-                  </h3>
-                  <p className="text-foreground/40 text-sm italic font-medium">
-                    {nextEvent
-                      ? new Date(nextEvent.start_time).toLocaleString(isTR ? "tr-TR" : "en-US", {
-                          weekday: "long",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : (isTR ? "Tarih bekleniyor..." : "Date pending...")}
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-6 bg-foreground/5 px-8 py-5 rounded-[2rem] border border-foreground/5">
-                  <CountdownUnit value={timeLeft.hours} label={isTR ? "SAAT" : "STD"} />
-                  <div className="w-[1px] h-8 bg-foreground/10" />
-                  <CountdownUnit value={timeLeft.minutes} label={isTR ? "DAKİKA" : "MIN"} />
-                  <div className="w-[1px] h-8 bg-foreground/10" />
-                  <CountdownUnit value={timeLeft.seconds} label={isTR ? "SANİYE" : "SEK"} />
-                </div>
 
-                <div className="max-w-[140px] text-center">
-                  <div className="text-[10px] font-black text-primary/40 uppercase tracking-widest mb-1 italic">
-                    {isTR ? "Erişim Kısıtlı" : "Restricted"}
-                  </div>
-                  <div className="text-[11px] font-bold text-foreground/40 leading-tight">
-                    {isTR ? "Liderlik linkleri üyelerimize özeldir." : "Links are exclusive for members."}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          {/* ── Next Event Counter — shared component ── */}
+          <NextMeetingCounter />
 
           {/* HERO SECTION */}
           <section className="text-center mb-32">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-8"
@@ -179,7 +85,7 @@ export default function Home({ params }: PageProps) {
               </span>
               {isTR ? "Yeni Nesil Ticaret & Eğitim Ekosistemi" : "Next-Gen Business & Education Ecosystem"}
             </motion.div>
-            
+
             <h1 className="text-5xl md:text-8xl font-black tracking-tighter mb-8 leading-[1.1] md:leading-[0.9] text-foreground">
               {isTR ? (
                 <>Mühimmatı <span className="text-gradient">Kuşan,</span><br /> Globalde <span className="text-primary-dark dark:opacity-40 opacity-70">Büyü.</span></>
@@ -187,9 +93,9 @@ export default function Home({ params }: PageProps) {
                 <>Equip the <span className="text-gradient">Arsenal,</span><br /> Scale <span className="text-primary-dark dark:opacity-40 opacity-70">Globally.</span></>
               )}
             </h1>
-            
+
             <p className="max-w-3xl mx-auto text-lg md:text-xl text-foreground/50 mb-12 leading-relaxed">
-              {isTR 
+              {isTR
                 ? "Artık sadece 'öğrenmek' yetmez. Greenleaf Partneri olarak global ticaret hakları, dijital mühimmatlar ve 24/7 mentorluk ile işinizi sisteme bağlayın."
                 : "Learning is no longer enough. As a Greenleaf Partner, link your business to a system with global rights, digital ammunition, and 24/7 mentorship."}
             </p>
@@ -208,7 +114,7 @@ export default function Home({ params }: PageProps) {
             </div>
           </section>
 
-          {/* PARTNER PERKS — only 3 cards: Dijital Cephanelik, Özel Workshoplar, Liderlik Paneli */}
+          {/* PARTNER PERKS */}
           {role === "GUEST" && (
             <section id="imkanlar" className="mb-32 space-y-16">
               <div className="text-center space-y-4">
@@ -221,24 +127,24 @@ export default function Home({ params }: PageProps) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <PerkCard 
+                <PerkCard
                   icon={<Target className="w-6 h-6" />}
                   title={isTR ? "Dijital Cephanelik" : "Digital Arsenal"}
-                  desc={isTR 
+                  desc={isTR
                     ? "Yüksek dönüşümlü Reels senaryo eğitimleri, Masterclass eğitimleri ve teknik mühimmatlar."
                     : "High-conversion Reels script trainings, Masterclass sessions, and technical tools."}
                 />
-                <PerkCard 
+                <PerkCard
                   icon={<Shield className="w-6 h-6" />}
                   title={isTR ? "Özel Workshoplar" : "Exclusive Workshops"}
-                  desc={isTR 
+                  desc={isTR
                     ? "Sadece partnerlere özel, kapalı devre profesyonel satış teknikleri eğitimleri webinarları."
                     : "Closed-circuit professional sales techniques training webinars for partners only."}
                 />
-                <PerkCard 
+                <PerkCard
                   icon={<Users className="w-6 h-6" />}
                   title={isTR ? "Liderlik Paneli" : "Leadership Panel"}
-                  desc={isTR 
+                  desc={isTR
                     ? "Kendi ekibinizi yönetebileceğiniz profesyonel aday ve istatistik takip paneli."
                     : "Professional candidate and statistics tracking panel to manage your own team."}
                 />
@@ -246,7 +152,7 @@ export default function Home({ params }: PageProps) {
             </section>
           )}
 
-          {/* ROADMAP SECTION (ONLY FOR GUEST) */}
+          {/* ROADMAP SECTION */}
           {role === "GUEST" && (
             <section className="mb-32">
               <GlassCard className="p-12 border-primary/5 bg-primary/[0.02] overflow-hidden relative rounded-[3rem]">
@@ -333,7 +239,7 @@ export default function Home({ params }: PageProps) {
   );
 }
 
-function PerkCard({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) {
+function PerkCard({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
     <GlassCard className="p-8 border-foreground/5 hover:border-primary/20 transition-all group rounded-3xl">
       <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-white transition-all duration-500">
@@ -345,7 +251,7 @@ function PerkCard({ icon, title, desc }: { icon: React.ReactNode, title: string,
   );
 }
 
-function RoadmapStep({ number, label, desc }: { number: string, label: string, desc: string }) {
+function RoadmapStep({ number, label, desc }: { number: string; label: string; desc: string }) {
   return (
     <div className="space-y-4">
       <div className="text-4xl font-black text-primary/20 dark:text-primary/10 tracking-widest">{number}</div>
@@ -353,17 +259,6 @@ function RoadmapStep({ number, label, desc }: { number: string, label: string, d
         <div className="text-sm font-black uppercase tracking-widest text-foreground">{label}</div>
         <div className="text-xs text-foreground/40 leading-relaxed italic">{desc}</div>
       </div>
-    </div>
-  );
-}
-
-function CountdownUnit({ value, label }: { value: number, label: string }) {
-  return (
-    <div className="flex flex-col items-center min-w-[50px]">
-      <span className="text-3xl font-black text-foreground tabular-nums">
-        {value.toString().padStart(2, '0')}
-      </span>
-      <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">{label}</span>
     </div>
   );
 }
