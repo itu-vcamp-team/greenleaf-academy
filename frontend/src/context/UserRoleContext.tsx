@@ -48,6 +48,19 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
     verifyRole();
   }, []);
 
+  // Periodic check for token expiration to sync UI
+  useEffect(() => {
+    const checkInterval = setInterval(() => {
+      const { access_token, isAuthenticated, clearAuth } = useAuthStore.getState();
+      if (access_token && !isAuthenticated()) {
+        console.log("Session expired, logging out...");
+        clearAuth();
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(checkInterval);
+  }, []);
+
   const setRole = (newRole: UserRole) => {
     setInternalRole(newRole);
     // Note: In real app, this should probably only happen via API

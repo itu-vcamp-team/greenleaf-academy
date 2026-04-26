@@ -207,3 +207,15 @@ Geri sayım artık hardcoded değil:
 - **Event PATCH endpoint:** Backend'de `PATCH /api/events/{id}` henüz yoksa eklenmelidir (mevcut durumda sadece `POST + DELETE` var).
 - **Admin Content page ESLint:** Mevcut `any` type kullanımları temizlenebilir.
 - **Real-time notifications:** Yeni partner kaydı için admin bildirim (WebSocket veya polling).
+
+---
+
+## Session Management & UI Sync (April 2026)
+
+### 19. JWT Expiration & UI Sync
+**Problem:** Kullanıcı oturumu (JWT) kapandığında frontend bunu fark etmiyor ve sanki hala login'miş gibi profil ikonunu göstermeye devam ediyordu. Ayrıca Navbar'da profil butonunun çeviri anahtarı (`auth.profile`) eksikti.
+**Action:** JWT expiration kontrolü eklendi ve periyodik senkronizasyon mekanizması kuruldu.
+**Changes:**
+- `src/store/auth.store.ts`: `isTokenExpired` helper'ı eklendi, `isAuthenticated` bu kontrolü yapacak şekilde güncellendi.
+- `src/context/UserRoleContext.tsx`: `setInterval` ile dakikada bir token kontrolü yapılıp süresi dolmuşsa `clearAuth` çağrılarak UI'ın "Guest" moduna geçmesi sağlandı.
+- `messages/tr-TR.json` & `en-US.json`: Eksik olan `auth.profile` çeviri anahtarı eklendi.

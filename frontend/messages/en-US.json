@@ -16,6 +16,7 @@
     "email": "Email",
     "password": "Password",
     "username": "Username",
+    "profile": "My Profile",
     "captcha_hint": "Enter the sum of the numbers"
   },
   "academy": {

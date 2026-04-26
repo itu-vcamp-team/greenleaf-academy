@@ -16,6 +16,7 @@
     "email": "E-posta",
     "password": "Şifre",
     "username": "Kullanıcı Adı",
+    "profile": "Profilim",
     "captcha_hint": "Ekrandaki sayıların toplamını girin"
   },
   "academy": {

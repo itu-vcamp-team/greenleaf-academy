@@ -20,6 +20,25 @@ interface AuthState {
   isAuthenticated: () => boolean;
 }
 
+const isTokenExpired = (token: string | null): boolean => {
+  if (!token) return true;
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    const { exp } = JSON.parse(jsonPayload);
+    // exp is in seconds, Date.now() is in ms
+    return Date.now() >= exp * 1000;
+  } catch {
+    return true;
+  }
+};
+
 const setCookie = (name: string, value: string, days = 7) => {
   if (typeof document === "undefined") return;
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
@@ -47,7 +66,10 @@ export const useAuthStore = create<AuthState>()(
         deleteCookie("access_token");
         deleteCookie("user_role");
       },
-      isAuthenticated: () => !!get().access_token,
+      isAuthenticated: () => {
+        const token = get().access_token;
+        return !!token && !isTokenExpired(token);
+      },
     }),
     {
       name: "greenleaf-auth",
