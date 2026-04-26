@@ -50,6 +50,7 @@ export function LoginForm() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!turnstileToken) return;
     setLoading(true);
     setError("");
     try {
@@ -193,8 +194,9 @@ export function LoginForm() {
                       ref={forgotTurnstileRef}
                       siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAADDnJNGyXUKu4w1k"}
                       onSuccess={(token) => setForgotTurnstileToken(token)}
-                      onExpire={() => setForgotTurnstileToken(null)}
-                      options={{ theme: "light" }}
+                      onExpire={() => { setForgotTurnstileToken(null); forgotTurnstileRef.current?.reset(); }}
+                      onError={() => { setForgotTurnstileToken(null); forgotTurnstileRef.current?.reset(); }}
+                      options={{ theme: "light", retry: "auto", retryInterval: 3000 }}
                     />
                   </div>
                   <Button type="submit" className="w-full h-14 font-black" disabled={loading || !forgotTurnstileToken}>
@@ -300,10 +302,9 @@ export function LoginForm() {
                       ref={turnstileRef}
                       siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAADDnJNGyXUKu4w1k"}
                       onSuccess={(token) => setTurnstileToken(token)}
-                      onExpire={() => setTurnstileToken(null)}
-                      options={{
-                        theme: 'light',
-                      }}
+                      onExpire={() => { setTurnstileToken(null); turnstileRef.current?.reset(); }}
+                      onError={() => { setTurnstileToken(null); turnstileRef.current?.reset(); }}
+                      options={{ theme: "light", retry: "auto", retryInterval: 3000 }}
                     />
                   </div>
 
@@ -319,7 +320,7 @@ export function LoginForm() {
                   type="submit"
                   className="w-full h-14 rounded-xl font-black text-xs uppercase tracking-widest"
                   size="lg"
-                  disabled={loading}
+                  disabled={loading || !turnstileToken}
                 >
                   {loading ? "Giriş Yapılıyor..." : t("login")}
                 </Button>
