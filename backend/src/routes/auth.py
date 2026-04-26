@@ -12,7 +12,7 @@ from src.datalayer.database import get_db_session
 from src.datalayer.model.db.user import User, UserRole
 from src.datalayer.model.db.reference_code import ReferenceCode
 from src.datalayer.model.dto.auth_dto import (
-    RegisterStep1Schema, RegisterStep2Schema, RegisterStep3Schema,
+    RegisterStep1Schema, RegisterStep2Schema, RegisterStep3Schema, RegisterVerifyOTPSchema,
     LoginSchema, LoginResponseSchema, TokenResponseSchema,
     Verify2FASchema, ResetPasswordSchema, ProfileUpdateSchema,
     RefreshTokenSchema,
@@ -74,13 +74,22 @@ async def get_captcha():
 @router.post("/register/step1")
 async def register_step1(data: RegisterStep1Schema):
     """
-    Step 1: Basic user info.
-    Stores data in Redis temporarily.
+    Step 1: External Greenleaf Global verification.
     """
+    verified = await GreenleafGlobalService.verify_greenleaf_global_credentials(
+        data.gl_username, data.gl_password
+    )
+    if not verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Greenleaf Global credentials could not be verified."
+        )
+
     session_id = str(uuid.uuid4())
-    temp_data = data.model_dump()
-    temp_data["password_hash"] = PasswordService.hash_password(data.password)
-    del temp_data["password"]
+    temp_data = {
+        "gl_verified": True,
+        "gl_username": data.gl_username
+    }
 
     r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
     await r.setex(f"reg_temp:{session_id}", 1800, json.dumps(temp_data))
@@ -92,17 +101,8 @@ async def register_step1(data: RegisterStep1Schema):
 @router.post("/register/step2")
 async def register_step2(data: RegisterStep2Schema):
     """
-    Step 2: External Greenleaf Global verification.
+    Step 2: Partner / Reference Info.
     """
-    verified = await GreenleafGlobalService.verify_greenleaf_global_credentials(
-        data.gl_username, data.gl_password
-    )
-    if not verified:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Greenleaf Global credentials could not be verified."
-        )
-
     r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
     stored = await r.get(f"reg_temp:{data.session_id}")
     if not stored:
@@ -110,24 +110,23 @@ async def register_step2(data: RegisterStep2Schema):
         raise HTTPException(status_code=404, detail="Registration session expired.")
 
     temp_data = json.loads(stored)
-    temp_data["gl_verified"] = True
-    temp_data["gl_username"] = data.gl_username
+    temp_data["has_partner_id"] = data.has_partner_id
+    temp_data["reference_code"] = data.reference_code
+    temp_data["supervisor_name"] = data.supervisor_name
 
     await r.setex(f"reg_temp:{data.session_id}", 1800, json.dumps(temp_data))
     await r.aclose()
 
-    return {"status": "verified"}
+    return {"status": "ok"}
 
 
 @router.post("/register/step3")
 async def register_step3(
     data: RegisterStep3Schema,
-    request: Request,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db_session)
 ):
     """
-    Step 3: Reference code and DB write.
+    Step 3: Account Details + Send OTP.
     """
     r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
     stored = await r.get(f"reg_temp:{data.session_id}")
@@ -135,23 +134,77 @@ async def register_step3(
         await r.aclose()
         raise HTTPException(status_code=404, detail="Registration session expired.")
 
-    temp_data = json.loads(stored)
-    if not temp_data.get("gl_verified"):
+    # Check uniqueness
+    stmt = select(User).where((User.username == data.username) | (User.email == data.email))
+    res = await db.execute(stmt)
+    if res.scalar_one_or_none():
         await r.aclose()
-        raise HTTPException(status_code=400, detail="Greenleaf Global verification missing.")
+        raise HTTPException(status_code=400, detail="Username or email already exists.")
 
+    temp_data = json.loads(stored)
+    temp_data.update({
+        "username": data.username,
+        "email": data.email,
+        "full_name": data.full_name,
+        "phone": data.phone,
+        "password_hash": PasswordService.hash_password(data.password)
+    })
+
+    # Generate OTP
+    otp = await OTPService.generate_otp(f"reg_otp:{data.session_id}", purpose="registration")
+    
+    # Send email (immediate for now, or background)
+    await MailingService.send_activation_email(
+        to_email=data.email,
+        code=otp,
+        full_name=data.full_name
+    )
+
+    await r.setex(f"reg_temp:{data.session_id}", 1800, json.dumps(temp_data))
+    await r.aclose()
+
+    return {"status": "otp_sent"}
+
+
+@router.post("/register/verify-otp")
+async def register_verify_otp(
+    data: RegisterVerifyOTPSchema,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Step 4: Final Email Verification & Account Creation.
+    """
+    # 1. Verify OTP
+    if not await OTPService.verify_otp(f"reg_otp:{data.session_id}", data.code, purpose="registration"):
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code.")
+
+    # 2. Get Stored Data
+    r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+    stored = await r.get(f"reg_temp:{data.session_id}")
+    if not stored:
+        await r.aclose()
+        raise HTTPException(status_code=404, detail="Registration session expired.")
+
+    temp_data = json.loads(stored)
+    
+    # 3. Reference Code Logic (Moved from old step3)
     is_active = False
     inviter_id = None
 
-    if data.has_partner_id:
-        if not data.reference_code:
+    if temp_data.get("has_partner_id"):
+        ref_code = temp_data.get("reference_code")
+        if not ref_code:
+            await r.aclose()
             raise HTTPException(status_code=400, detail="Reference code required.")
 
-        stmt = select(ReferenceCode).where(ReferenceCode.code == data.reference_code, ReferenceCode.is_used == False)
+        stmt = select(ReferenceCode).where(ReferenceCode.code == ref_code, ReferenceCode.is_used == False)
         res = await db.execute(stmt)
         ref = res.scalar_one_or_none()
 
         if not ref:
+            await r.aclose()
             raise HTTPException(status_code=400, detail="Invalid or used reference code.")
 
         inviter_id = ref.created_by
@@ -161,7 +214,7 @@ async def register_step3(
         if settings.APP_ENV == "development":
             is_active = True
     else:
-        # User chose "No Partner ID" -> goes to waitlist
+        # Waitlist logic
         stmt_admins = select(User.email).where(User.role.in_([UserRole.ADMIN]))
         res_admins = await db.execute(stmt_admins)
         admin_emails = [row[0] for row in res_admins.all()]
@@ -172,9 +225,10 @@ async def register_step3(
                 admin_emails=admin_emails,
                 applicant_name=temp_data["full_name"],
                 applicant_email=temp_data["email"],
-                supervisor_name=data.supervisor_name
+                supervisor_name=temp_data.get("supervisor_name")
             )
 
+    # 4. Create User
     new_user = User(
         id=uuid.uuid4(),
         username=temp_data["username"],
@@ -184,29 +238,21 @@ async def register_step3(
         password_hash=temp_data["password_hash"],
         role=UserRole.PARTNER,
         is_active=is_active,
-        is_verified=False,
+        is_verified=True, # Email is now verified via Step 4
         inviter_id=inviter_id,
         consent_given_at=datetime.now(timezone.utc),
         consent_ip=request.client.host if request.client else None,
-        supervisor_note=data.supervisor_name
+        supervisor_note=temp_data.get("supervisor_name")
     )
 
     db.add(new_user)
     await db.commit()
+    
+    # Cleanup
     await r.delete(f"reg_temp:{data.session_id}")
     await r.aclose()
 
-    otp = await OTPService.generate_otp(str(new_user.id))
-    background_tasks.add_task(
-        MailingService.send_activation_email,
-        to_email=new_user.email,
-        code=otp,
-        full_name=new_user.full_name
-    )
-
-    logger.info(f"OTP generated and background task added for user {new_user.username}")
-
-    return {"user_id": new_user.id, "status": "pending_email_verification"}
+    return {"user_id": str(new_user.id), "status": "registered"}
 
 
 # --- TOKEN REFRESH ---

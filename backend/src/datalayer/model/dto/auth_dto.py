@@ -5,11 +5,28 @@ from pydantic import BaseModel, EmailStr, field_validator
 
 
 class RegisterStep1Schema(BaseModel):
+    """Step 1: Global Office Verification"""
+    gl_username: str
+    gl_password: str
+
+
+class RegisterStep2Schema(BaseModel):
+    """Step 2: Partner / Reference Info"""
+    session_id: str
+    has_partner_id: bool
+    reference_code: Optional[str] = None
+    supervisor_name: Optional[str] = None
+
+
+class RegisterStep3Schema(BaseModel):
+    """Step 3: Account Details"""
+    session_id: str
     full_name: str
     username: str
     email: EmailStr
     phone: Optional[str] = None
     password: str
+    confirm_password: str
 
     @field_validator("phone", mode="before")
     @classmethod
@@ -34,18 +51,18 @@ class RegisterStep1Schema(BaseModel):
             raise ValueError("Password must contain at least one digit.")
         return v
 
+    @field_validator("confirm_password")
+    @classmethod
+    def passwords_match(cls, v: str, info) -> str:
+        if "password" in info.data and v != info.data["password"]:
+            raise ValueError("Passwords do not match.")
+        return v
 
-class RegisterStep2Schema(BaseModel):
-    session_id: str  # Redis key for temp registration data
-    gl_username: str
-    gl_password: str
 
-
-class RegisterStep3Schema(BaseModel):
+class RegisterVerifyOTPSchema(BaseModel):
+    """Step 4: Final Email OTP Verification"""
     session_id: str
-    has_partner_id: bool
-    reference_code: Optional[str] = None
-    supervisor_name: Optional[str] = None
+    code: str
 
 
 class LoginSchema(BaseModel):
