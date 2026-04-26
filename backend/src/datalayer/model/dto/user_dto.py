@@ -6,7 +6,6 @@ from src.datalayer.model.db.user import UserRole
 
 
 class UserBase(BaseModel):
-    tenant_id: UUID
     role: UserRole = UserRole.GUEST
     username: str = Field(..., max_length=50)
     email: EmailStr

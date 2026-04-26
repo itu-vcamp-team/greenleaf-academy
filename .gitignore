@@ -1,5 +1,10 @@
 .env
 .env.local
+.env.prod
+
+# Production SSL sertifikaları (sunucuda manuel oluşturulur, git'e commit edilmez)
+docker/nginx/ssl/
+
 __pycache__/
 *.pyc
 .next/

@@ -1,7 +1,5 @@
 from ._repository_abc import IRepository, ISyncRepository
 from ._base_repository import AsyncBaseRepository
-from ._tenant_base_repository import AsyncTenantBaseRepository
-from .tenant_repository import TenantRepository
 from .user_repository import UserRepository
 from .user_session_repository import UserSessionRepository
 from .academy_repository import AcademyRepository
@@ -17,8 +15,6 @@ __all__ = [
     "IRepository",
     "ISyncRepository",
     "AsyncBaseRepository",
-    "AsyncTenantBaseRepository",
-    "TenantRepository",
     "UserRepository",
     "UserSessionRepository",
     "AcademyRepository",

@@ -19,8 +19,6 @@ class ContentStatus(str, Enum):
 class AcademyContent(BaseModel):
     __tablename__ = "academy_contents"
 
-    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"), index=True)
-
     type: Mapped[ContentType] = mapped_column(SQLEnum(ContentType))
     locale: Mapped[str] = mapped_column(String(5), index=True)
     # e.g. "tr", "en", "de"

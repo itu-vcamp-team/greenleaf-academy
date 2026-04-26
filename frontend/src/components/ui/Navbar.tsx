@@ -4,9 +4,9 @@ import { BrandLogo } from "./BrandLogo";
 import { Button } from "./Button";
 import { Link, useRouter } from "@/i18n/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTenant } from "@/context/TenantContext";
 import { useUserRole } from "@/context/UserRoleContext";
 import { useAuthStore } from "@/store/auth.store";
+import { useThemeStore } from "@/store/theme.store";
 import { Sun, Moon, Calendar, LayoutDashboard, Settings, User, LogOut, Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -14,7 +14,7 @@ import { useState } from "react";
 export function Navbar() {
   const t = useTranslations("nav");
   const authT = useTranslations("auth");
-  const { activeTenant, theme, toggleTheme } = useTenant();
+  const { theme, toggleTheme } = useThemeStore();
   const { role } = useUserRole();
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const router = useRouter();
@@ -28,12 +28,12 @@ export function Navbar() {
   };
 
   const navLinks = [
-    { href: "/", label: t("home"), icon: <User className="w-4 h-4" /> }, // t("home") or fallback
+    { href: "/", label: t("home"), icon: <User className="w-4 h-4" /> },
     { href: "/calendar", label: t("calendar"), icon: <Calendar className="w-4 h-4" /> },
     { href: "/academy", label: t("academy"), icon: null },
     ...(!isGuest ? [{ href: "/dashboard", label: t("dashboard"), icon: <LayoutDashboard className="w-4 h-4" /> }] : []),
-    ...(isGuest ? [{ href: "/#imkanlar", label: activeTenant?.slug === "tr" ? "İmkanlar" : "Vorteile", icon: null }] : []),
-    ...((role === "ADMIN" || role === "SUPERADMIN") ? [{ href: "/settings", label: t("settings"), icon: <Settings className="w-4 h-4" /> }] : []),
+    ...(isGuest ? [{ href: "/#imkanlar", label: "İmkanlar", icon: null }] : []),
+    ...(role === "ADMIN" ? [{ href: "/settings", label: t("settings"), icon: <Settings className="w-4 h-4" /> }] : []),
   ];
 
   return (
@@ -63,13 +63,6 @@ export function Navbar() {
             >
               {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
-
-            <div className="hidden sm:flex items-center gap-2 p-1 bg-foreground/5 rounded-xl border border-foreground/10 text-foreground">
-               <div className="px-3 py-1 text-[10px] font-bold uppercase text-primary flex items-center gap-1">
-                  <span>{activeTenant?.logo}</span>
-                  <span>{activeTenant?.name}</span>
-               </div>
-            </div>
 
             <div className="hidden md:flex items-center gap-2">
               {isGuest ? (
@@ -183,4 +176,3 @@ function NavLink({ href, icon, children }: { href: string; icon?: React.ReactNod
     </Link>
   );
 }
-

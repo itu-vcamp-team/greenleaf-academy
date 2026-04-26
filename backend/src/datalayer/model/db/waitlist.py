@@ -8,8 +8,6 @@ from src.datalayer.model.db.base import BaseModel
 class Waitlist(BaseModel):
     __tablename__ = "waitlist"
 
-    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"), index=True)
-
     full_name: Mapped[str] = mapped_column(String(150))
     email: Mapped[str] = mapped_column(String(255), index=True)
     phone: Mapped[Optional[str]] = mapped_column(String(20), default=None)

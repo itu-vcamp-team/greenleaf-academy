@@ -8,8 +8,6 @@ from src.datalayer.model.db.base import BaseModel
 class ResourceLink(BaseModel):
     __tablename__ = "resource_links"
 
-    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"), index=True)
-
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[Optional[str]] = mapped_column(String(1000), default=None)
 

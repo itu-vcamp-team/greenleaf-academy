@@ -3,12 +3,11 @@ Data Transfer Objects (DTO) and Pydantic schemas module.
 Contains all request/response models for the API.
 """
 
-from .tenant_dto import TenantBase, TenantCreate, TenantUpdate, TenantResponse
 from .user_dto import UserBase, UserCreate, UserUpdate, UserResponse
 from .academy_content_dto import (
-    AcademyContentBase, 
-    AcademyContentCreate, 
-    AcademyContentUpdate, 
+    AcademyContentBase,
+    AcademyContentCreate,
+    AcademyContentUpdate,
     AcademyContentResponse
 )
 from .auth_dto import (
@@ -22,7 +21,8 @@ from .auth_dto import (
     TokenResponseSchema,
     LoginResponseSchema,
     ForgotPasswordSchema,
-    ResetPasswordSchema
+    ResetPasswordSchema,
+    AdminCreateUserSchema
 )
 from .academy_schemas import (
     ContentBase,
@@ -34,24 +34,16 @@ from .academy_schemas import (
 )
 
 __all__ = [
-    # Tenant
-    "TenantBase",
-    "TenantCreate",
-    "TenantUpdate",
-    "TenantResponse",
-    
     # User
     "UserBase",
     "UserCreate",
     "UserUpdate",
     "UserResponse",
-    
-    # Academy Content
+    # Academy Content DTO
     "AcademyContentBase",
     "AcademyContentCreate",
     "AcademyContentUpdate",
     "AcademyContentResponse",
-    
     # Auth
     "RegisterStep1Schema",
     "RegisterStep2Schema",
@@ -64,8 +56,8 @@ __all__ = [
     "LoginResponseSchema",
     "ForgotPasswordSchema",
     "ResetPasswordSchema",
-    
-    # Academy Detailed Schemas
+    "AdminCreateUserSchema",
+    # Academy Schemas
     "ContentBase",
     "ContentCreate",
     "ContentUpdate",

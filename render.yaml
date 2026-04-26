@@ -1,19 +1,18 @@
 services:
-  # --- BACKEND ---
+  # --- BACKEND (Single-tenant: one deployment per server) ---
   - type: web
     name: greenleaf-backend
     runtime: python
     branch: main
     rootDir: backend
-    # seed_initial_data.py kasıtlı olarak buraya dahil edilmemiştir.
-    # İlk veri yüklemesi deploy sonrası manuel olarak bir kez çalıştırılmalıdır:
+    # seed_initial_data.py must be run manually ONCE after fresh deploy:
     #   render run greenleaf-backend -- python seed_initial_data.py
     buildCommand: pip install -r requirements.txt && alembic upgrade head
     startCommand: uvicorn src.app:app --host 0.0.0.0 --port 10000
     plan: starter
     disk:
       name: greenleaf-uploads
-      mountPath: /var/data/uploads   # UPLOAD_DIR ile aynı path — alt klasör oluşturmaya gerek yok
+      mountPath: /var/data/uploads
       sizeGB: 1
     envVars:
       - key: APP_ENV
@@ -44,9 +43,9 @@ services:
       - key: CORS_ALLOWED_ORIGIN_REGEX
         value: 'https?://([a-z0-9-]+\.)*greenleafakademi\.com'
       - key: FRONTEND_URL
-        value: https://tr.greenleafakademi.com
+        value: https://greenleafakademi.com
 
-  # --- FRONTEND ---
+  # --- FRONTEND (Single-tenant: one deployment per server) ---
   - type: web
     name: greenleaf-frontend
     runtime: node
@@ -57,7 +56,10 @@ services:
     plan: free
     envVars:
       - key: NEXT_PUBLIC_BACKEND_URL
-        value: https://greenleaf-backend-wkfv.onrender.com
+        fromService:
+          name: greenleaf-backend
+          type: web
+          property: hostWithProtocol
 
   # --- REDIS ---
   - type: redis
@@ -69,7 +71,12 @@ services:
         description: allow all
 
 databases:
+  # Fresh database (new schema, no tenants table)
   - name: greenleaf-postgres
     databaseName: greenleaf_db
     user: greenleaf
     plan: free
+
+# ─── Superadmin service is deployed SEPARATELY ────────────────────────────────
+# See: superadmin/backend/ and superadmin/frontend/
+# Superadmin has its own render services and its own database.

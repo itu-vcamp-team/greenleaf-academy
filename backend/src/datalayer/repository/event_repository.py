@@ -4,11 +4,12 @@ from typing import List
 from sqlalchemy import select
 from src.datalayer.model.db.event import Event, EventVisibility
 from src.datalayer.model.db.user import User, UserRole
-from src.datalayer.repository._tenant_base_repository import AsyncTenantBaseRepository
+from src.datalayer.repository._base_repository import AsyncBaseRepository
 
-class EventRepository(AsyncTenantBaseRepository[Event]):
-    def __init__(self, session, tenant_id: uuid.UUID):
-        super().__init__(session, Event, tenant_id)
+
+class EventRepository(AsyncBaseRepository[Event]):
+    def __init__(self, session):
+        super().__init__(session, Event)
 
     async def get_upcoming_events(
         self,
@@ -18,13 +19,12 @@ class EventRepository(AsyncTenantBaseRepository[Event]):
         """
         Fetches published upcoming events.
         GUEST role: only visibility=ALL events.
-        PARTNER+ role: all published events for the tenant.
+        PARTNER+ role: all published events.
         """
         now = datetime.now(timezone.utc)
         stmt = (
             select(Event)
             .where(
-                Event.tenant_id == self.tenant_id,
                 Event.is_published == True,
                 Event.start_time >= now,
             )
@@ -54,7 +54,6 @@ class EventRepository(AsyncTenantBaseRepository[Event]):
         stmt = (
             select(Event)
             .where(
-                Event.tenant_id == self.tenant_id,
                 Event.is_published == True,
                 Event.start_time >= month_start,
                 Event.start_time <= month_end,
@@ -70,14 +69,13 @@ class EventRepository(AsyncTenantBaseRepository[Event]):
 
     async def get_partner_emails_for_announcement(self) -> List[str]:
         """
-        Fetches emails of all active and verified partners in this tenant.
+        Fetches emails of all active and verified partners.
         Used for broadcast announcements.
         """
         stmt = select(User.email).where(
-            User.tenant_id == self.tenant_id,
             User.role == UserRole.PARTNER,
             User.is_active == True,
             User.is_verified == True,
         )
         result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        return [row[0] for row in result.all()]

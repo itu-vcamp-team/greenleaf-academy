@@ -1,5 +1,4 @@
 from .base import BaseModel
-from .tenant import Tenant
 from .user import User, UserRole
 from .reference_code import ReferenceCode
 from .user_session import UserSession
@@ -14,7 +13,6 @@ from .audit_log import AuditLog
 
 __all__ = [
     "BaseModel",
-    "Tenant",
     "User",
     "UserRole",
     "ReferenceCode",

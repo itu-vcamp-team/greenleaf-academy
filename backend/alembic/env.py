@@ -8,7 +8,7 @@ from alembic import context
 from src.config import get_settings
 from src.datalayer.database import Base
 from src.datalayer.model.db import (
-    Tenant, User, ReferenceCode, UserSession, AcademyContent,
+    User, ReferenceCode, UserSession, AcademyContent,
     UserProgress, Favorite, Event, Announcement, ResourceLink,
     Waitlist, AuditLog
 )

@@ -10,7 +10,6 @@ import redis.asyncio as aioredis
 
 from src.datalayer.database import get_db_session
 from src.datalayer.model.db.user import User, UserRole
-from src.datalayer.model.db.tenant import Tenant
 from src.datalayer.model.db.reference_code import ReferenceCode
 from src.datalayer.model.dto.auth_dto import (
     RegisterStep1Schema, RegisterStep2Schema, RegisterStep3Schema,
@@ -19,7 +18,7 @@ from src.datalayer.model.dto.auth_dto import (
     RefreshTokenSchema,
 )
 from src.services import (
-    PasswordService, TokenService, CaptchaService, 
+    PasswordService, TokenService, CaptchaService,
     OTPService, GreenleafGlobalService, SessionService,
     MailingService
 )
@@ -103,17 +102,17 @@ async def register_step2(data: RegisterStep2Schema):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Greenleaf Global credentials could not be verified."
         )
-    
+
     r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
     stored = await r.get(f"reg_temp:{data.session_id}")
     if not stored:
         await r.aclose()
         raise HTTPException(status_code=404, detail="Registration session expired.")
-    
+
     temp_data = json.loads(stored)
     temp_data["gl_verified"] = True
     temp_data["gl_username"] = data.gl_username
-    
+
     await r.setex(f"reg_temp:{data.session_id}", 1800, json.dumps(temp_data))
     await r.aclose()
 
@@ -122,7 +121,7 @@ async def register_step2(data: RegisterStep2Schema):
 
 @router.post("/register/step3")
 async def register_step3(
-    data: RegisterStep3Schema, 
+    data: RegisterStep3Schema,
     request: Request,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db_session)
@@ -135,43 +134,38 @@ async def register_step3(
     if not stored:
         await r.aclose()
         raise HTTPException(status_code=404, detail="Registration session expired.")
-    
+
     temp_data = json.loads(stored)
     if not temp_data.get("gl_verified"):
         await r.aclose()
         raise HTTPException(status_code=400, detail="Greenleaf Global verification missing.")
 
-    tenant_id = getattr(request.state, "tenant_id", None)
-    if not tenant_id:
-         raise HTTPException(status_code=400, detail="Tenant context missing.")
-
     is_active = False
     inviter_id = None
-    
+
     if data.has_partner_id:
         if not data.reference_code:
             raise HTTPException(status_code=400, detail="Reference code required.")
-        
+
         stmt = select(ReferenceCode).where(ReferenceCode.code == data.reference_code, ReferenceCode.is_used == False)
         res = await db.execute(stmt)
         ref = res.scalar_one_or_none()
-        
+
         if not ref:
             raise HTTPException(status_code=400, detail="Invalid or used reference code.")
-        
+
         inviter_id = ref.created_by
         ref.is_used = True
         ref.used_at = datetime.now(timezone.utc)
-        
+
         if settings.APP_ENV == "development":
             is_active = True
     else:
         # User chose "No Partner ID" -> goes to waitlist
-        # Notify Admins via Background Tasks
-        stmt_admins = select(User.email).where(User.role.in_([UserRole.ADMIN, UserRole.SUPERADMIN]))
+        stmt_admins = select(User.email).where(User.role.in_([UserRole.ADMIN]))
         res_admins = await db.execute(stmt_admins)
         admin_emails = [row[0] for row in res_admins.all()]
-        
+
         if admin_emails:
             background_tasks.add_task(
                 MailingService.send_waitlist_notification_to_admin,
@@ -183,7 +177,6 @@ async def register_step3(
 
     new_user = User(
         id=uuid.uuid4(),
-        tenant_id=tenant_id,
         username=temp_data["username"],
         email=temp_data["email"],
         full_name=temp_data["full_name"],
@@ -197,7 +190,7 @@ async def register_step3(
         consent_ip=request.client.host if request.client else None,
         supervisor_note=data.supervisor_name
     )
-    
+
     db.add(new_user)
     await db.commit()
     await r.delete(f"reg_temp:{data.session_id}")
@@ -210,7 +203,7 @@ async def register_step3(
         code=otp,
         full_name=new_user.full_name
     )
-    
+
     logger.info(f"OTP generated and background task added for user {new_user.username}")
 
     return {"user_id": new_user.id, "status": "pending_email_verification"}
@@ -251,7 +244,7 @@ async def refresh_token_endpoint(
             detail="Session expired or revoked. Please log in again.",
         )
 
-    # Get fresh user data (role / tenant_id may have changed)
+    # Get fresh user data
     stmt = select(User).where(User.id == user_id)
     res = await db.execute(stmt)
     user = res.scalar_one_or_none()
@@ -263,7 +256,7 @@ async def refresh_token_endpoint(
         )
 
     new_access_token = TokenService.create_access_token(
-        str(user.id), user.role.value, str(user.tenant_id), jti
+        str(user.id), user.role.value, jti
     )
 
     return TokenResponseSchema(
@@ -300,12 +293,10 @@ async def login(
         # 3. Check for 30-day 2FA
         now = datetime.now(timezone.utc)
         requires_2fa = False
-        
+
         if not user.last_2fa_at:
             requires_2fa = True
         else:
-            # Ensure last_2fa_at is treated as UTC for comparison
-            # SQLAlchemy DateTime(timezone=True) handles this, but we force for safety
             last_dt = user.last_2fa_at.replace(tzinfo=timezone.utc) if user.last_2fa_at.tzinfo is None else user.last_2fa_at
             if now - last_dt > timedelta(days=30):
                 requires_2fa = True
@@ -313,35 +304,35 @@ async def login(
         if requires_2fa:
             logger.info(f"Triggering 2FA for user {user.username}")
             otp = await OTPService.generate_otp(str(user.id))
-            
+
             background_tasks.add_task(
                 MailingService.send_monthly_2fa_email,
                 to_email=user.email,
                 code=otp,
                 full_name=user.full_name
             )
-            
+
             temp_token = str(uuid.uuid4())
             r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
             await r.setex(f"login_2fa:{temp_token}", 300, str(user.id))
             await r.aclose()
-            
+
             return LoginResponseSchema(
-                requires_2fa=True, 
-                temp_token=temp_token, 
+                requires_2fa=True,
+                temp_token=temp_token,
                 user_id=user.id,
                 masked_email=mask_email(user.email)
             )
 
-        # 4. Success -> Create Session (Kick-out happens here)
+        # 4. Success -> Create Session
         jti = await SessionService.create_session(
-            db, user.id, 
+            db, user.id,
             ip_address=request.client.host if request.client else None,
             device_info=request.headers.get("user-agent")
         )
         await db.commit()
 
-        access_token = TokenService.create_access_token(str(user.id), user.role.value, str(user.tenant_id), jti)
+        access_token = TokenService.create_access_token(str(user.id), user.role.value, jti)
         refresh_token = TokenService.create_refresh_token(str(user.id), jti)
 
         return LoginResponseSchema(
@@ -352,7 +343,7 @@ async def login(
     except Exception as e:
         logger.error(f"CRITICAL LOGIN ERROR: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail="An internal server error occurred during login. Please try again later."
         )
 
@@ -366,7 +357,7 @@ async def verify_2fa(
     try:
         r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
         stored_user_id = await r.get(f"login_2fa:{data.temp_token}")
-        
+
         if not stored_user_id or stored_user_id != str(data.user_id):
             await r.aclose()
             raise HTTPException(status_code=400, detail="Invalid or expired 2FA session.")
@@ -384,13 +375,13 @@ async def verify_2fa(
         user.last_2fa_at = datetime.now(timezone.utc)
 
         jti = await SessionService.create_session(
-            db, user.id, 
+            db, user.id,
             ip_address=request.client.host if request.client else None,
             device_info=request.headers.get("user-agent")
         )
         await db.commit()
 
-        access_token = TokenService.create_access_token(str(user.id), user.role.value, str(user.tenant_id), jti)
+        access_token = TokenService.create_access_token(str(user.id), user.role.value, jti)
         refresh_token = TokenService.create_refresh_token(str(user.id), jti)
 
         return TokenResponseSchema(access_token=access_token, refresh_token=refresh_token)
@@ -400,7 +391,7 @@ async def verify_2fa(
         error_msg = str(e)
         logger.error(f"CRITICAL 2FA ERROR: {error_msg}", exc_info=True)
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Backend Error (2FA): {error_msg}"
         )
 
@@ -409,7 +400,7 @@ async def verify_2fa(
 
 @router.post("/forgot-password")
 async def forgot_password(
-    email: str, # Usually from a simple schema, but doing it directly for now
+    email: str,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db_session)
 ):
@@ -417,11 +408,10 @@ async def forgot_password(
     stmt = select(User).where(User.email == email)
     res = await db.execute(stmt)
     user = res.scalar_one_or_none()
-    
+
     if not user:
-        # Don't reveal if user exists for security, just return success
         return {"message": "If this email is registered, you will receive a reset code."}
-    
+
     otp = await OTPService.generate_otp(str(user.id), purpose="password_reset")
     background_tasks.add_task(
         MailingService.send_password_reset_email,
@@ -429,7 +419,7 @@ async def forgot_password(
         code=otp,
         full_name=user.full_name
     )
-    
+
     return {"message": "Reset code sent to your email."}
 
 
@@ -441,14 +431,14 @@ async def reset_password(
     """Verifies OTP and resets password."""
     if not await OTPService.verify_otp(str(data.user_id), data.code, purpose="password_reset"):
         raise HTTPException(status_code=400, detail="Invalid or expired reset code.")
-    
+
     stmt = select(User).where(User.id == data.user_id)
     res = await db.execute(stmt)
     user = res.scalar_one()
-    
+
     user.password_hash = PasswordService.hash_password(data.new_password)
     await db.commit()
-    
+
     return {"message": "Password reset successfully."}
 
 

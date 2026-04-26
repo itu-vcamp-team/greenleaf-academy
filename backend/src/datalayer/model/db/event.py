@@ -22,8 +22,6 @@ class EventVisibility(str, Enum):
 class Event(BaseModel):
     __tablename__ = "events"
 
-    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"), index=True)
-
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[Optional[str]] = mapped_column(String(3000), default=None)
 

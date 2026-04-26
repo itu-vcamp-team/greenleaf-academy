@@ -9,20 +9,15 @@ from src.logger import logger
 router = APIRouter(prefix="/admin/maintenance", tags=["Maintenance"])
 
 
-# Render.com Cron Job Yapılandırması:
-# Eğer Render dashboard'da Cron Job oluşturulacaksa şu komut kullanılabilir:
-# curl -X POST https://api.greenleafakademi.com/api/admin/maintenance/cleanup -H "Authorization: Bearer <SUPERADMIN_TOKEN>"
-# Veya bu endpoint Render dashboard "Scheduled Job" kısmına eklenebilir.
-
 @router.post("/cleanup")
 async def run_cleanup(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db_session),
-    _=Depends(require_roles([UserRole.SUPERADMIN])),
+    _=Depends(require_roles([UserRole.ADMIN])),
 ):
     """
-    Manually triggers account and session cleanup. 
-    Restricted to SUPERADMIN only.
+    Manually triggers account and session cleanup.
+    Restricted to ADMIN only.
     """
     background_tasks.add_task(_do_cleanup, db)
     return {"message": "Bakım ve temizlik işlemleri arka planda başlatıldı."}

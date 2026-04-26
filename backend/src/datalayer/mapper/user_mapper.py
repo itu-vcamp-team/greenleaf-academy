@@ -11,7 +11,6 @@ class UserMapper:
     @staticmethod
     def dto_to_model(dto: UserCreate, password_hash: str) -> User:
         return User(
-            tenant_id=dto.tenant_id,
             role=dto.role,
             username=dto.username,
             email=dto.email,

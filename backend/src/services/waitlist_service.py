@@ -25,7 +25,6 @@ class WaitlistService:
             return existing[0]
             
         entry = Waitlist(
-            tenant_id=self.repo.tenant_id,
             full_name=full_name,
             email=email,
             phone=phone,

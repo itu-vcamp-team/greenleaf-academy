@@ -2,11 +2,8 @@
 
 import { Leaf } from "lucide-react";
 import { motion } from "framer-motion";
-import { useTenant } from "@/context/TenantContext";
 
 export function BrandLogo() {
-  const { activeTenant } = useTenant();
-
   return (
     <motion.div 
       initial={{ opacity: 0, x: -20 }}
@@ -24,7 +21,7 @@ export function BrandLogo() {
           Greenleaf<span className="text-primary-light">.</span>
         </span>
         <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold">
-          {activeTenant?.name ?? "Greenleaf"}
+          Akademi
         </span>
       </div>
     </motion.div>

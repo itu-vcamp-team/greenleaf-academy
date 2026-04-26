@@ -15,6 +15,5 @@ class AuditLog(BaseModel):
     entity_id: Mapped[Optional[str]] = mapped_column(String(100), default=None)
 
     metadata_json: Mapped[Optional[dict]] = mapped_column(JSON, name="metadata", default={})
-    
+
     ip_address: Mapped[Optional[str]] = mapped_column(String(45), default=None)
-    tenant_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("tenants.id"), default=None)

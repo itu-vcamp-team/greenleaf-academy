@@ -7,7 +7,6 @@ import { ChevronRight, Play, BookOpen, Clock, Shield, Target, Plus, Calendar, Gl
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useUserRole } from "@/context/UserRoleContext";
-import { useTenant } from "@/context/TenantContext";
 import { motion } from "framer-motion";
 import React, { useState, useEffect } from "react";
 import apiClient from "@/lib/api-client";
@@ -38,7 +37,6 @@ export default function Home({ params }: PageProps) {
   const { locale } = React.use(params);
   const t = useTranslations();
   const { role } = useUserRole();
-  const { activeTenant } = useTenant();
 
   const [nextEvent, setNextEvent] = useState<UpcomingEvent | null>(null);
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });

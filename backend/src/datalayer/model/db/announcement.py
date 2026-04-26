@@ -8,8 +8,6 @@ from src.datalayer.model.db.base import BaseModel
 class Announcement(BaseModel):
     __tablename__ = "announcements"
 
-    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"), index=True)
-
     title: Mapped[str] = mapped_column(String(200))
     body: Mapped[str] = mapped_column(Text)
     # Announcement content (plain text or simple markdown)

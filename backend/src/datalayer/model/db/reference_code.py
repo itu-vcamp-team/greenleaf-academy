@@ -9,10 +9,8 @@ from src.datalayer.model.db.base import BaseModel
 class ReferenceCode(BaseModel):
     __tablename__ = "reference_codes"
 
-    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"), index=True)
-
     code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
-    # Admin created one-time invitation code. e.g. "GL-TR-A7X2"
+    # Admin created one-time invitation code. e.g. "GL-A7X2B3"
 
     created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     # user.id of the partner who created the code

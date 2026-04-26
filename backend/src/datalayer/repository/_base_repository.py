@@ -258,20 +258,12 @@ class RepositoryFactory:
         return BaseRepository(self.session, model_class)
 
 
-# Circular import handle: 
-# Moved inside the class/method or using future annotations.
-from ._tenant_base_repository import AsyncTenantBaseRepository
-
 class AsyncRepositoryFactory:
     """Factory for creating asynchronous repositories"""
-    
+
     def __init__(self, session: AsyncSession):
         self.session = session
-    
+
     def get_repository(self, model_class: type[T]) -> AsyncBaseRepository[T]:
         """Create an async repository for the given model class"""
         return AsyncBaseRepository(self.session, model_class)
-
-    def get_tenant_repository(self, model_class: type[T], tenant_id: uuid.UUID) -> AsyncTenantBaseRepository[T]:
-        """Create an async repository that is automatically filtered by tenant_id"""
-        return AsyncTenantBaseRepository(self.session, model_class, tenant_id)

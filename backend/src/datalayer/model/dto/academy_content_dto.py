@@ -6,7 +6,6 @@ from src.datalayer.model.db.academy_content import ContentType, ContentStatus
 
 
 class AcademyContentBase(BaseModel):
-    tenant_id: UUID
     type: ContentType
     locale: str = Field(..., max_length=5)
     title: str = Field(..., max_length=200)

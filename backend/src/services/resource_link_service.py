@@ -26,7 +26,6 @@ class ResourceLinkService:
         order: int = 0
     ) -> ResourceLink:
         resource = ResourceLink(
-            tenant_id=self.repo.tenant_id,
             title=title,
             url=url,
             created_by=created_by,

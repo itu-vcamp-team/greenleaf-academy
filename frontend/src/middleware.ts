@@ -39,17 +39,16 @@ export default function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
   }
 
-  if (isAdminPage && role !== "ADMIN" && role !== "SUPERADMIN") {
+  // Only ADMIN and EDITOR roles can access admin pages
+  if (isAdminPage && role !== "ADMIN" && role !== "EDITOR") {
     return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
   }
 
   // 4. next-intl middleware: locale detection + prefix ekleme / redirect
-  // (locale olmayan /login gibi path'leri de yakalar ve /tr-TR/auth/login'e yönlendirir)
   return intlMiddleware(request);
 }
 
 export const config = {
   // _next, api ve statik dosyalar hariç her şeyi yakala
-  // Bu sayede /login, /dashboard gibi locale'siz path'ler de intlMiddleware'e düşer
   matcher: ["/((?!_next/static|_next/image|favicon\\.ico|api).*)"],
 };

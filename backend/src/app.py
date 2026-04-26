@@ -4,7 +4,6 @@ from src.app_lifespan import lifespan
 from src.config import get_settings
 
 # Middleware imports
-from src.middleware.tenant_middleware import TenantMiddleware
 from src.middleware.rate_limit_middleware import RateLimitMiddleware
 from src.middleware.security_headers_middleware import SecurityHeadersMiddleware
 
@@ -21,31 +20,27 @@ from src.routes.announcements import router as announcements_router
 from src.routes.resource_links import router as resources_router
 from src.routes.waitlist import router as waitlist_router
 from src.routes.admin_stats import router as admin_stats_router
-from src.routes.tenants import router as tenants_router
-from src.routes.superadmin_users import router as superadmin_users_router
 
 settings = get_settings()
 
 app = FastAPI(
     title="Greenleaf Akademi API",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
     docs_url="/docs" if settings.APP_ENV == "development" else None,
     redoc_url=None,
+    redirect_slashes=False,  # Prevent 307 redirects that break Next.js proxy auth headers
 )
 
 # --- Middleware Registration (LIFO Order: Last added is outermost) ---
 
-# 2. Security Headers Middleware
+# Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
-# 3. Rate Limit Middleware
+# Rate Limit Middleware
 app.add_middleware(RateLimitMiddleware)
 
-# 3. Tenant Middleware (Innermost)
-app.add_middleware(TenantMiddleware)
-
-# 4. CORS Middleware (Outermost - processes request first, response last)
+# CORS Middleware (Outermost - processes request first, response last)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.FRONTEND_URL],
@@ -60,7 +55,6 @@ app.add_middleware(
 
 # Public & Auth Routes
 app.include_router(auth_router, prefix="/api")
-app.include_router(tenants_router, prefix="/api")
 
 # Academy & Interaction Routes
 app.include_router(academy_router, prefix="/api")
@@ -72,7 +66,6 @@ app.include_router(events_router, prefix="/api")
 app.include_router(admin_maintenance_router, prefix="/api")
 app.include_router(admin_users_router, prefix="/api")
 app.include_router(admin_stats_router, prefix="/api")
-app.include_router(superadmin_users_router, prefix="/api")
 
 # Content & Support Management (Admin Only)
 app.include_router(announcements_router, prefix="/api")
@@ -87,7 +80,7 @@ app.include_router(reference_codes_router, prefix="/api")
 async def health_check():
     """Service health status and environment info."""
     return {
-        "status": "ok", 
+        "status": "ok",
         "env": settings.APP_ENV,
         "docs_enabled": settings.APP_ENV == "development"
     }

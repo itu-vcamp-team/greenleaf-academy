@@ -2,21 +2,18 @@ import uuid
 from typing import Optional
 from sqlalchemy import select
 from src.datalayer.model.db.reference_code import ReferenceCode
-from ._tenant_base_repository import AsyncTenantBaseRepository
+from ._base_repository import AsyncBaseRepository
 
 
-class ReferenceCodeRepository(AsyncTenantBaseRepository[ReferenceCode]):
-    def __init__(self, session, tenant_id: uuid.UUID):
-        super().__init__(session, ReferenceCode, tenant_id)
+class ReferenceCodeRepository(AsyncBaseRepository[ReferenceCode]):
+    def __init__(self, session):
+        super().__init__(session, ReferenceCode)
 
     async def get_by_code(self, code: str) -> Optional[ReferenceCode]:
         """Get a reference code by its unique string representation."""
         stmt = (
             select(self.model_class)
-            .where(
-                self.model_class.code == code,
-                self.model_class.tenant_id == self.tenant_id
-            )
+            .where(self.model_class.code == code)
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
@@ -27,7 +24,6 @@ class ReferenceCodeRepository(AsyncTenantBaseRepository[ReferenceCode]):
             select(self.model_class)
             .where(
                 self.model_class.code == code,
-                self.model_class.tenant_id == self.tenant_id,
                 self.model_class.is_used == False
             )
         )

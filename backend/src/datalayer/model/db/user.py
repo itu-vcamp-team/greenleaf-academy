@@ -8,7 +8,6 @@ from src.datalayer.model.db.base import BaseModel
 
 
 class UserRole(str, Enum):
-    SUPERADMIN = "SUPERADMIN"
     ADMIN = "ADMIN"
     EDITOR = "EDITOR"
     PARTNER = "PARTNER"
@@ -18,7 +17,6 @@ class UserRole(str, Enum):
 class User(BaseModel):
     __tablename__ = "users"
 
-    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"), index=True)
     role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole), default=UserRole.GUEST)
 
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
@@ -36,9 +34,9 @@ class User(BaseModel):
     profile_image_path: Mapped[Optional[str]] = mapped_column(String(500), default=None)
     last_2fa_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
     supervisor_note: Mapped[Optional[str]] = mapped_column(String(500), default=None)
-    
+
     consent_given_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
     consent_ip: Mapped[Optional[str]] = mapped_column(String(45), default=None)
-    
+
     last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
     last_active_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)

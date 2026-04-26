@@ -1,7 +1,6 @@
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { Inter } from "next/font/google";
-import { TenantProvider } from "@/context/TenantContext";
 import { UserRoleProvider } from "@/context/UserRoleContext";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
@@ -16,7 +15,7 @@ export default async function LocaleLayout(props: {
   const locale = params.locale;
   const children = props.children;
   // Ensure that the incoming `locale` is valid
-  if (!routing.locales.includes(locale as any)) {
+  if (!routing.locales.includes(locale as (typeof routing.locales)[number])) {
     notFound();
   }
 
@@ -28,11 +27,9 @@ export default async function LocaleLayout(props: {
     <html lang={locale} suppressHydrationWarning>
       <body className={`${inter.variable} antialiased selection:bg-primary/30`}>
         <NextIntlClientProvider messages={messages}>
-          <TenantProvider>
-            <UserRoleProvider>
-              <main className="min-h-screen bg-background">{children}</main>
-            </UserRoleProvider>
-          </TenantProvider>
+          <UserRoleProvider>
+            <main className="min-h-screen bg-background">{children}</main>
+          </UserRoleProvider>
         </NextIntlClientProvider>
       </body>
     </html>

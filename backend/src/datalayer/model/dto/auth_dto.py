@@ -124,16 +124,17 @@ class ResetPasswordSchema(BaseModel):
         return v
 
 
-# --- SUPERADMIN: Manual User Creation ---
+# NOTE: SuperadminCreateUserSchema moved to superadmin service.
+# Kept for backward compatibility — tenant_id removed.
 
-class SuperadminCreateUserSchema(BaseModel):
+class AdminCreateUserSchema(BaseModel):
+    """Used by ADMIN to create PARTNER users directly."""
     full_name: str
     username: str
     email: EmailStr
     phone: Optional[str] = None
     password: str
-    role: Literal["ADMIN", "PARTNER"]
-    tenant_id: uuid.UUID
+    role: Literal["ADMIN", "PARTNER"] = "PARTNER"
 
     @field_validator("phone", mode="before")
     @classmethod

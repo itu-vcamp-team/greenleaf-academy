@@ -23,7 +23,6 @@ class AnnouncementService:
         pinned: bool = False
     ) -> Announcement:
         announcement = Announcement(
-            tenant_id=self.repo.tenant_id,
             title=title,
             body=body,
             created_by=created_by,

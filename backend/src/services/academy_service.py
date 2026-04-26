@@ -10,6 +10,7 @@ from src.exceptions import InvalidYouTubeURLError
 class AcademyService:
     """
     Service layer for Academy logic including URL processing and high-level content management.
+    Single-tenant: no tenant_id required.
     """
 
     @staticmethod
@@ -41,7 +42,6 @@ class AcademyService:
     async def create_content(
         self,
         db: AsyncSession,
-        tenant_id: uuid.UUID,
         data: dict
     ) -> AcademyContent:
         """
@@ -56,31 +56,30 @@ class AcademyService:
         if not data.get("thumbnail_url"):
             data["thumbnail_url"] = self.get_youtube_thumbnail_url(data["video_url"])
 
-        repo = AcademyRepository(db, tenant_id)
-        content = AcademyContent(**data, tenant_id=tenant_id)
-        
+        repo = AcademyRepository(db)
+        content = AcademyContent(**data)
+
         # Save entity
         saved_content = await repo.save(content)
         await db.commit()
         await db.refresh(saved_content)
-        
+
         return saved_content
 
     async def update_content(
         self,
         db: AsyncSession,
-        tenant_id: uuid.UUID,
         content_id: uuid.UUID,
         data: dict
     ) -> AcademyContent:
         """
         Updates content and refreshes thumbnail if video_url changes.
         """
-        repo = AcademyRepository(db, tenant_id)
+        repo = AcademyRepository(db)
         content = await repo.get_by_id(content_id)
-        
+
         if not content:
-            return None # Router handles 404
+            return None  # Router handles 404
 
         # If video_url changes, re-validate and update thumbnail
         if "video_url" in data and data["video_url"] != content.video_url:
@@ -95,5 +94,5 @@ class AcademyService:
         updated_content = await repo.save(content)
         await db.commit()
         await db.refresh(updated_content)
-        
+
         return updated_content

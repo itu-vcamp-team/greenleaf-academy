@@ -8,16 +8,16 @@ settings = get_settings()
 class TokenService:
     """
     Service for JWT generation, verification and decoding.
+    Single-tenant: tenant_id removed from tokens.
     """
 
     @staticmethod
-    def create_access_token(user_id: str, role: str, tenant_id: str, jti: str) -> str:
+    def create_access_token(user_id: str, role: str, jti: str) -> str:
         """Generates a short-lived access token (60 min)."""
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         to_encode = {
             "sub": user_id,
             "role": role,
-            "tenant_id": tenant_id,
             "jti": jti,
             "exp": expire,
             "type": "access"

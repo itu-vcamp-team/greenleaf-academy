@@ -16,7 +16,7 @@ AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_co
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_db():
     """Initialize test database schema after stripping PG-specific server defaults."""
-    
+
     # SQLite does not support gen_random_uuid() or now() as server defaults.
     # We strip them from metadata for the test session.
     for table in Base.metadata.tables.values():
@@ -38,10 +38,6 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
         # Rollback any changes to keep tests independent
         await session.rollback()
-
-@pytest.fixture
-def test_tenant_id() -> uuid.UUID:
-    return uuid.uuid4()
 
 @pytest.fixture
 def test_user_id() -> uuid.UUID:

@@ -17,7 +17,6 @@ import ReferenceCodeGenerator from "@/components/academy/ReferenceCodeGenerator"
 import ChildDetailModal from "@/components/academy/ChildDetailModal";
 import apiClient from "@/lib/api-client";
 import { useUserRole } from "@/context/UserRoleContext";
-import { useTenant } from "@/context/TenantContext";
 
 interface ChildUser {
   id: string;
@@ -37,7 +36,6 @@ export default function DashboardPage({ params }: PageProps) {
   const { locale } = React.use(params);
   const t = useTranslations("academy");
   const { role } = useUserRole();
-  const { activeTenant } = useTenant();
   const isGuest = role === "GUEST";
   
   const [children, setChildren] = useState<ChildUser[]>([]);
