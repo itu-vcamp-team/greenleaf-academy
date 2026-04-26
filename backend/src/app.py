@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from src.app_lifespan import lifespan
 from src.config import get_settings
 
@@ -36,6 +37,9 @@ app = FastAPI(
 )
 
 # --- Middleware Registration (LIFO Order: Last added is outermost) ---
+
+# Trust X-Forwarded-For from Render's proxy so rate limiting uses the real client IP
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
