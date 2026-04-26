@@ -8,11 +8,11 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const CSP = [
   "default-src 'self'",
   // Inline styles needed by Tailwind/framer-motion; Turnstile needs 'unsafe-eval' (official Cloudflare requirement)
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com https://s.ytimg.com",
-  // Turnstile renders an <iframe>; YouTube player also needs it
-  "frame-src https://challenges.cloudflare.com https://www.youtube.com https://drive.google.com",
-  // Turnstile verification XHR happens client-side during widget load
-  "connect-src 'self' https://challenges.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com https://s.ytimg.com",
+  // Turnstile renders an <iframe>; YouTube player (noCookie mode) needs youtube-nocookie.com
+  "frame-src https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com https://drive.google.com",
+  // Turnstile verification XHR + backend API + YouTube player postMessage origin
+  "connect-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com",
   // Inline styles needed by many UI libs
   "style-src 'self' 'unsafe-inline'",
   // YouTube thumbnails

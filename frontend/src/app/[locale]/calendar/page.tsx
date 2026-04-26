@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar as CalendarIcon, Clock, Link as LinkIcon, Plus, Trash2,
-  ChevronLeft, ChevronRight, Video, Shield, X, MapPin, Phone,
+  ChevronLeft, ChevronRight, Video, Shield, X, MapPin, Phone, CalendarPlus, CheckCircle, Loader2, AlertCircle,
 } from "lucide-react";
 
 import { Navbar } from "@/components/ui/Navbar";
@@ -12,6 +12,8 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useUserRole } from "@/context/UserRoleContext";
+import { useAuthStore } from "@/store/auth.store";
+import { Link } from "@/i18n/navigation";
 import apiClient from "@/lib/api-client";
 
 // Matches the backend EventResponse schema exactly
@@ -200,9 +202,66 @@ function EventCard({
   role: string;
   onDelete: (id: string) => void;
 }) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isGuest = role === "GUEST" || !isAuthenticated();
+
   const startTime = new Date(event.start_time);
   const isUpcoming = startTime > new Date();
-  const canJoin = role !== "GUEST" && isUpcoming && !!event.meeting_link;
+  const canJoin = !isGuest && isUpcoming && !!event.meeting_link;
+
+  const [calState, setCalState] = useState<"idle" | "form" | "loading" | "success">("idle");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [calError, setCalError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const resetCal = () => {
+    setCalState("idle");
+    setCalError("");
+    setGuestEmail("");
+    setGuestName("");
+    setIsSubmitting(false);
+  };
+
+  const handleAddToCalendar = async () => {
+    if (isGuest) {
+      setCalState("form");
+      setCalError("");
+      return;
+    }
+    setCalState("loading");
+    try {
+      await apiClient.get(`/events/${event.id}/add-to-calendar`);
+      setCalState("success");
+    } catch {
+      setCalState("idle");
+    }
+  };
+
+  const handleGuestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedEmail = guestEmail.trim();
+    if (!trimmedEmail.includes("@")) {
+      setCalError("Lütfen geçerli bir e-posta adresi girin.");
+      return;
+    }
+    setIsSubmitting(true);
+    setCalError("");
+    try {
+      await apiClient.post(`/events/${event.id}/add-to-calendar/guest`, {
+        email: trimmedEmail,
+        full_name: guestName.trim() || null,
+      });
+      setCalState("success");
+    } catch (err: unknown) {
+      const detail =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        "Bir hata oluştu. Lütfen tekrar deneyin.";
+      setCalError(detail);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const dateStr = startTime.toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
   const timeStr = startTime.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
@@ -262,6 +321,79 @@ function EventCard({
                 <span className="flex items-center gap-2 text-xs font-bold text-foreground/20 italic cursor-not-allowed">
                   <Clock className="w-4 h-4" /> Yayın Sona Erdi
                 </span>
+              )}
+
+              {isUpcoming && (
+                <AnimatePresence mode="wait">
+                  {calState === "success" ? (
+                    <motion.span
+                      key="success"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-center gap-2 text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800"
+                    >
+                      <CheckCircle className="w-4 h-4" /> Takvime Eklendi
+                    </motion.span>
+                  ) : calState === "form" ? (
+                    <motion.form
+                      key="form"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      onSubmit={handleGuestSubmit}
+                      className="flex flex-col gap-2 w-full max-w-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">Takvimime Ekle</p>
+                        <button type="button" onClick={resetCal} className="text-foreground/30 hover:text-foreground/60 transition-colors">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Adınız (isteğe bağlı)"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        className="px-3 py-2 text-xs border border-foreground/10 rounded-xl bg-white/80 dark:bg-black/40 placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                      <input
+                        type="email"
+                        placeholder="E-posta adresiniz *"
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                        required
+                        className="px-3 py-2 text-xs border border-foreground/10 rounded-xl bg-white/80 dark:bg-black/40 placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                      {calError && (
+                        <p className="text-[10px] text-red-500 font-medium flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" /> {calError}
+                        </p>
+                      )}
+                      <Button type="submit" disabled={isSubmitting} className="rounded-xl h-8 text-xs font-black gap-2 bg-primary/90 hover:bg-primary">
+                        {isSubmitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <><CalendarPlus className="w-3 h-3" /> Daveti Gönder</>}
+                      </Button>
+                      <p className="text-[9px] text-foreground/30 text-center">
+                        E-postanız yalnızca bu davet için kullanılır.{" "}
+                        <Link href="/legal/kvkk" className="underline hover:text-primary transition-colors">KVKK</Link>
+                      </p>
+                    </motion.form>
+                  ) : (
+                    <motion.button
+                      key="idle"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      onClick={handleAddToCalendar}
+                      disabled={calState === "loading"}
+                      className="flex items-center gap-2 text-xs font-black px-4 py-2 rounded-xl border border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/60 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {calState === "loading" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <><CalendarPlus className="w-4 h-4" /> Takvimime Ekle</>
+                      )}
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               )}
 
               {event.end_time && (
