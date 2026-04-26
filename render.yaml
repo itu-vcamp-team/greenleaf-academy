@@ -62,6 +62,8 @@ services:
           name: greenleaf-backend
           type: web
           property: hostWithProtocol
+      - key: NEXT_PUBLIC_TURNSTILE_SITE_KEY
+        value: 0x4AAAAAADDnJNGyXUKu4w1k
 
   # --- REDIS ---
   - type: redis
