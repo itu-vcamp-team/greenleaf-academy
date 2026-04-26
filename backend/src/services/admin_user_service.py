@@ -9,8 +9,8 @@ class AdminUserService:
     def __init__(self, repo: UserRepository):
         self.repo = repo
 
-    async def get_pending_approvals(self) -> List[User]:
-        """List verified but inactive guest users who want to be partners."""
+    async def get_pending_approvals(self) -> List[dict]:
+        """List verified but inactive users with inviter details."""
         return await self.repo.get_pending_users()
 
     async def approve_partner(self, user_id: uuid.UUID) -> User:

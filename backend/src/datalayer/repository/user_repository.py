@@ -29,19 +29,39 @@ class UserRepository(AsyncBaseRepository[User]):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def get_pending_users(self) -> List[User]:
-        """Get users who verified email but are not yet active (pending admin approval)."""
+    async def get_pending_users(self) -> List[dict]:
+        """Get inactive users with their inviter details for admin approval."""
+        from sqlalchemy.orm import aliased
+        Inviter = aliased(User)
+        
         stmt = (
-            select(self.model_class)
+            select(User, Inviter.full_name.label("inviter_name"), Inviter.username.label("inviter_username"))
+            .outerjoin(Inviter, User.inviter_id == Inviter.id)
             .where(
-                self.model_class.is_verified == True,
-                self.model_class.is_active == False,
-                self.model_class.role == UserRole.GUEST
+                User.is_active == False,
+                User.is_verified == True
             )
-            .order_by(self.model_class.created_at.asc())
+            .order_by(User.created_at.desc())
         )
+        
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        rows = result.all()
+        
+        pending = []
+        for row in rows:
+            u = row[0]
+            pending.append({
+                "id": str(u.id),
+                "username": u.username,
+                "email": u.email,
+                "full_name": u.full_name,
+                "phone": u.phone,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+                "inviter_name": row.inviter_name,
+                "inviter_username": row.inviter_username,
+                "supervisor_note": u.supervisor_note
+            })
+        return pending
 
     async def get_users(
         self,

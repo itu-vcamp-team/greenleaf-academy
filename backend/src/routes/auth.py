@@ -11,6 +11,7 @@ import redis.asyncio as aioredis
 from src.datalayer.database import get_db_session
 from src.datalayer.model.db.user import User, UserRole
 from src.datalayer.model.db.reference_code import ReferenceCode
+from src.datalayer.repository import WaitlistRepository
 from src.datalayer.model.dto.auth_dto import (
     RegisterStep1Schema, RegisterStep2Schema, RegisterStep3Schema, RegisterVerifyOTPSchema,
     LoginSchema, LoginResponseSchema, TokenResponseSchema,
@@ -20,7 +21,7 @@ from src.datalayer.model.dto.auth_dto import (
 from src.services import (
     PasswordService, TokenService, CaptchaService,
     OTPService, GreenleafGlobalService, SessionService,
-    MailingService
+    MailingService, WaitlistService
 )
 from src.config import get_settings
 from src.logger import logger
@@ -189,7 +190,7 @@ async def register_verify_otp(
     db: AsyncSession = Depends(get_db_session)
 ):
     """
-    Step 4: Final Email Verification & Account Creation.
+    Step 4: Final Email Verification & Entry Creation (Waitlist or User).
     """
     # 1. Verify OTP
     if not await OTPService.verify_otp(f"reg_otp:{data.session_id}", data.code, purpose="registration"):
@@ -204,36 +205,24 @@ async def register_verify_otp(
 
     temp_data = json.loads(stored)
     
-    # 3. Reference Code Logic (Moved from old step3)
-    is_active = False
-    inviter_id = None
+    # 3. Decision Logic: Waitlist or User?
+    if not temp_data.get("has_partner_id"):
+        # CASE: NO PARTNER ID -> WAITLIST
+        repo = WaitlistRepository(db)
+        service = WaitlistService(repo)
+        
+        await service.apply(
+            full_name=temp_data["full_name"],
+            email=temp_data["email"],
+            phone=temp_data.get("phone"),
+            supervisor_name=temp_data.get("supervisor_name"),
+            message="Self-registration via Waitlist flow."
+        )
 
-    if temp_data.get("has_partner_id"):
-        ref_code = temp_data.get("reference_code")
-        if not ref_code:
-            await r.aclose()
-            raise HTTPException(status_code=400, detail="Reference code required.")
-
-        stmt = select(ReferenceCode).where(ReferenceCode.code == ref_code, ReferenceCode.is_used == False)
-        res = await db.execute(stmt)
-        ref = res.scalar_one_or_none()
-
-        if not ref:
-            await r.aclose()
-            raise HTTPException(status_code=400, detail="Invalid or used reference code.")
-
-        inviter_id = ref.created_by
-        ref.is_used = True
-        ref.used_at = datetime.now(timezone.utc)
-
-        if settings.APP_ENV == "development":
-            is_active = True
-    else:
-        # Waitlist logic
+        # Notify Admins
         stmt_admins = select(User.email).where(User.role.in_([UserRole.ADMIN]))
         res_admins = await db.execute(stmt_admins)
         admin_emails = [row[0] for row in res_admins.all()]
-
         if admin_emails:
             background_tasks.add_task(
                 MailingService.send_waitlist_notification_to_admin,
@@ -243,7 +232,30 @@ async def register_verify_otp(
                 supervisor_name=temp_data.get("supervisor_name")
             )
 
-    # 4. Create User
+        await db.commit()
+        await r.delete(f"reg_temp:{data.session_id}")
+        await r.aclose()
+        return {"status": "waitlisted"}
+
+    # CASE: HAS PARTNER ID -> PENDING USER
+    ref_code = temp_data.get("reference_code")
+    if not ref_code:
+        await r.aclose()
+        raise HTTPException(status_code=400, detail="Reference code required.")
+
+    stmt = select(ReferenceCode).where(ReferenceCode.code == ref_code, ReferenceCode.is_used == False)
+    res = await db.execute(stmt)
+    ref = res.scalar_one_or_none()
+
+    if not ref:
+        await r.aclose()
+        raise HTTPException(status_code=400, detail="Invalid or used reference code.")
+
+    inviter_id = ref.created_by
+    ref.is_used = True
+    ref.used_at = datetime.now(timezone.utc)
+
+    # Create User (always inactive pending admin approval)
     new_user = User(
         id=uuid.uuid4(),
         username=temp_data["username"],
@@ -251,10 +263,10 @@ async def register_verify_otp(
         full_name=temp_data["full_name"],
         phone=temp_data.get("phone"),
         password_hash=temp_data["password_hash"],
-        gl_username=temp_data.get("gl_username_hash"), # Save the verified GL hash
+        gl_username=temp_data.get("gl_username_hash"),
         role=UserRole.PARTNER,
-        is_active=is_active,
-        is_verified=True, # Email is now verified via Step 4
+        is_active=False, # Always False, needs admin/inviter approval
+        is_verified=True,
         inviter_id=inviter_id,
         consent_given_at=datetime.now(timezone.utc),
         consent_ip=request.client.host if request.client else None,
@@ -264,11 +276,10 @@ async def register_verify_otp(
     db.add(new_user)
     await db.commit()
     
-    # Cleanup
     await r.delete(f"reg_temp:{data.session_id}")
     await r.aclose()
 
-    return {"user_id": str(new_user.id), "status": "registered"}
+    return {"user_id": str(new_user.id), "status": "pending_approval"}
 
 
 # --- TOKEN REFRESH ---

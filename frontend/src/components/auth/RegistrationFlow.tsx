@@ -56,6 +56,7 @@ export function RegistrationFlow() {
 
   // Step 4: OTP
   const [otpCode, setOtpCode] = useState("");
+  const [regStatus, setRegStatus] = useState<"waitlisted" | "pending_approval" | null>(null);
 
   const router = useRouter();
 
@@ -119,10 +120,11 @@ export function RegistrationFlow() {
     setLoading(true);
     setError("");
     try {
-      await apiClient.post("/auth/register/verify-otp", {
+      const res = await apiClient.post("/auth/register/verify-otp", {
         session_id: sessionId,
         code: otpCode,
       });
+      setRegStatus(res.data.status);
       setStep(5); // Success state
     } catch (err: unknown) {
       setError(extractErrorMessage(err, "Doğrulama kodu hatalı veya süresi dolmuş."));
@@ -442,9 +444,13 @@ export function RegistrationFlow() {
               <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6 border border-green-500/20">
                 <CheckCircle2 className="w-8 h-8 text-green-400" />
               </div>
-              <h1 className="text-2xl font-bold mb-3">Kaydınız Başarılı!</h1>
+              <h1 className="text-2xl font-bold mb-3">
+                {regStatus === "waitlisted" ? "Bekleme Listesine Alındınız!" : "Kaydınız Alındı!"}
+              </h1>
               <p className="text-foreground/40 text-sm leading-relaxed mb-8">
-                Hesabınız başarıyla oluşturuldu. Başvurunuz incelemeye alındı. Onaylandıktan sonra e-posta ile bilgilendirileceksiniz.
+                {regStatus === "waitlisted" 
+                  ? "Başvurunuz bekleme listesine kaydedildi. Ekibimiz en kısa sürede sizinle iletişime geçecektir."
+                  : "Hesabınız oluşturuldu. Danışmanınız ve Admin onayından sonra giriş yapabileceksiniz."}
               </p>
               <Button onClick={() => router.push("/")} className="w-full rounded-2xl py-6 h-auto font-black text-xs uppercase tracking-widest">
                 Ana Sayfaya Dön
