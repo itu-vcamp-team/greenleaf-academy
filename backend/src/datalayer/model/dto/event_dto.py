@@ -29,6 +29,7 @@ class EventResponse(BaseModel):
     contact_info: Optional[str] = None
     visibility: str
     is_published: bool = False
+    is_rsvped: bool = False
 
 
 class GuestEventResponse(BaseModel):

@@ -32,7 +32,8 @@ async def list_events(
     """Lists upcoming events. Guests see less info (no meeting link)."""
     repo = EventRepository(db)
     events = await repo.get_upcoming_events(current_user.role, limit)
-    return [_sanitize_event(e, current_user.role) for e in events]
+    rsvped_ids = await _get_rsvped_ids(db, current_user)
+    return [_sanitize_event(e, current_user.role, rsvped_ids) for e in events]
 
 
 @router.get("/calendar", response_model=list[EventResponse | GuestEventResponse])
@@ -49,7 +50,8 @@ async def get_calendar_events(
 
     repo = EventRepository(db)
     events = await repo.get_events_by_month(year, month, current_user.role)
-    return [_sanitize_event(e, current_user.role) for e in events]
+    rsvped_ids = await _get_rsvped_ids(db, current_user)
+    return [_sanitize_event(e, current_user.role, rsvped_ids) for e in events]
 
 
 # ─── Calendar-invite (add to calendar) ────────────────────────────────────────
@@ -70,9 +72,10 @@ async def add_to_calendar(
     if not event or not event.is_published:
         raise HTTPException(status_code=404, detail="Etkinlik bulunamadı.")
 
-    # Idempotent RSVP: record only if not already saved
     rsvp_repo = EventCalendarRsvpRepository(db)
-    if not await rsvp_repo.already_rsvped(event_id, current_user.email):
+    already_added = await rsvp_repo.already_rsvped(event_id, current_user.email)
+
+    if not already_added:
         await rsvp_repo.record_rsvp(
             event_id=event_id,
             email=current_user.email,
@@ -81,23 +84,23 @@ async def add_to_calendar(
             user_id=current_user.id,
         )
 
-    ics_content = generate_ics(
-        title=event.title,
-        description=event.description,
-        start_time=event.start_time,
-        end_time=event.end_time,
-        location=event.location,
-        meeting_link=event.meeting_link,
-    )
+        ics_content = generate_ics(
+            title=event.title,
+            description=event.description,
+            start_time=event.start_time,
+            end_time=event.end_time,
+            location=event.location,
+            meeting_link=event.meeting_link,
+        )
 
-    background_tasks.add_task(
-        MailingService.send_calendar_invite_email,
-        to_email=current_user.email,
-        event_title=event.title,
-        ics_content=ics_content,
-    )
+        background_tasks.add_task(
+            MailingService.send_calendar_invite_email,
+            to_email=current_user.email,
+            event_title=event.title,
+            ics_content=ics_content,
+        )
 
-    return {"message": "Takvim daveti e-postanıza gönderildi."}
+    return {"message": "Takvim daveti e-postanıza gönderildi.", "already_added": already_added}
 
 
 @router.post("/{event_id}/add-to-calendar/guest")
@@ -127,9 +130,10 @@ async def add_to_calendar_guest(
             detail="Bu etkinlik yalnızca üyelere özeldir. Giriş yaparak takvime ekleyebilirsiniz.",
         )
 
-    # Idempotent RSVP: record only once per email per event
     rsvp_repo = EventCalendarRsvpRepository(db)
-    if not await rsvp_repo.already_rsvped(event_id, email):
+    already_added = await rsvp_repo.already_rsvped(event_id, email)
+
+    if not already_added:
         await rsvp_repo.record_rsvp(
             event_id=event_id,
             email=email,
@@ -138,21 +142,21 @@ async def add_to_calendar_guest(
             user_id=None,
         )
 
-    ics_content = generate_ics(
-        title=event.title,
-        description=event.description,
-        start_time=event.start_time,
-        end_time=event.end_time,
-        location=event.location,
-        meeting_link=None,  # guests do not receive the meeting link
-    )
+        ics_content = generate_ics(
+            title=event.title,
+            description=event.description,
+            start_time=event.start_time,
+            end_time=event.end_time,
+            location=event.location,
+            meeting_link=None,
+        )
 
-    background_tasks.add_task(
-        MailingService.send_calendar_invite_email,
-        to_email=email,
-        event_title=event.title,
-        ics_content=ics_content,
-    )
+        background_tasks.add_task(
+            MailingService.send_calendar_invite_email,
+            to_email=email,
+            event_title=event.title,
+            ics_content=ics_content,
+        )
 
     return {"message": "Takvim daveti e-postanıza gönderildi."}
 
@@ -313,8 +317,19 @@ async def delete_event(
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
-def _sanitize_event(event, role: UserRole) -> EventResponse | GuestEventResponse:
+async def _get_rsvped_ids(db: AsyncSession, current_user) -> set:
+    """Returns the set of event IDs the current user has already RSVPed to.
+    Returns empty set for guests (no email to look up)."""
+    if not current_user or current_user.role == UserRole.GUEST:
+        return set()
+    rsvp_repo = EventCalendarRsvpRepository(db)
+    return await rsvp_repo.get_rsvped_event_ids(current_user.email)
+
+
+def _sanitize_event(event, role: UserRole, rsvped_ids: set = set()) -> EventResponse | GuestEventResponse:
     """Returns typed response, hiding sensitive info (meeting_link) from GUESTS."""
     if role == UserRole.GUEST:
         return GuestEventResponse.model_validate(event)
-    return EventResponse.model_validate(event)
+    response = EventResponse.model_validate(event)
+    response.is_rsvped = event.id in rsvped_ids
+    return response

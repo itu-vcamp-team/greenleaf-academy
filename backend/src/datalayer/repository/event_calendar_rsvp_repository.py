@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import List, Set
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,6 +38,14 @@ class EventCalendarRsvpRepository(AsyncBaseRepository[EventCalendarRsvp]):
             .limit(1)
         )
         return result.scalar_one_or_none() is not None
+
+    async def get_rsvped_event_ids(self, email: str) -> Set[uuid.UUID]:
+        """Returns the set of event IDs the given email has RSVPed to."""
+        result = await self.session.execute(
+            select(EventCalendarRsvp.event_id)
+            .where(EventCalendarRsvp.email == email.lower())
+        )
+        return set(result.scalars().all())
 
     async def record_rsvp(
         self,

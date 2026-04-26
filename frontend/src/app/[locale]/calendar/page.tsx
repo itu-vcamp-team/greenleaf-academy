@@ -30,6 +30,7 @@ interface CalendarEvent {
   contact_info: string | null;
   visibility: "ALL" | "PARTNER_ONLY";
   is_published?: boolean;
+  is_rsvped?: boolean;
 }
 
 export default function CalendarPage() {
@@ -209,7 +210,9 @@ function EventCard({
   const isUpcoming = startTime > new Date();
   const canJoin = !isGuest && isUpcoming && !!event.meeting_link;
 
-  const [calState, setCalState] = useState<"idle" | "form" | "loading" | "success">("idle");
+  const [calState, setCalState] = useState<"idle" | "form" | "loading" | "success">(
+    event.is_rsvped ? "success" : "idle"
+  );
   const [guestEmail, setGuestEmail] = useState("");
   const [guestName, setGuestName] = useState("");
   const [calError, setCalError] = useState("");

@@ -17,6 +17,7 @@ interface UpcomingEvent {
   meeting_link?: string | null;
   category: string;
   visibility: string;
+  is_rsvped?: boolean;
 }
 
 /** Returns days / hours / minutes remaining — no seconds to avoid 1-second ticks. */
@@ -46,7 +47,7 @@ export function NextMeetingCounter() {
   const [timeLeft, setTimeLeft] = useState(getTimeLeft(new Date()));
   const [isFallback, setIsFallback] = useState(false);
 
-  // Calendar invite state
+  // Calendar invite state — initialized from server-side is_rsvped once event loads
   const [calState, setCalState] = useState<CalState>("idle");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [guestEmail, setGuestEmail] = useState("");
@@ -84,6 +85,11 @@ export function NextMeetingCounter() {
 
     fetchNextEvent();
   }, []);
+
+  // ── Sync calState with server-side is_rsvped once event loads ────────────
+  useEffect(() => {
+    if (nextEvent?.is_rsvped) setCalState("success");
+  }, [nextEvent]);
 
   // ── Countdown tick — every 60 s (no seconds displayed) ────────────────────
   useEffect(() => {
