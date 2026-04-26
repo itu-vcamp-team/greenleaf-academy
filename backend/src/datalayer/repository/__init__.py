@@ -9,6 +9,7 @@ from .favorite_repository import FavoriteRepository
 from .reference_code_repository import ReferenceCodeRepository
 from .announcement_repository import AnnouncementRepository
 from .resource_link_repository import ResourceLinkRepository
+from .contact_info_repository import ContactInfoRepository
 
 __all__ = [
     "IRepository",
@@ -23,4 +24,5 @@ __all__ = [
     "ReferenceCodeRepository",
     "AnnouncementRepository",
     "ResourceLinkRepository",
+    "ContactInfoRepository",
 ]

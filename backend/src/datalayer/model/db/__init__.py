@@ -10,6 +10,7 @@ from .announcement import Announcement
 from .resource_link import ResourceLink
 from .user_device import UserDevice
 from .audit_log import AuditLog
+from .contact_info import ContactInfo, ContactType
 
 __all__ = [
     "BaseModel",
@@ -29,4 +30,6 @@ __all__ = [
     "Announcement",
     "ResourceLink",
     "AuditLog",
+    "ContactInfo",
+    "ContactType",
 ]

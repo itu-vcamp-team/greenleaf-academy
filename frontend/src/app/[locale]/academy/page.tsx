@@ -8,8 +8,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "@/components/ui/Navbar";
 import MyProgressStats from "@/components/academy/MyProgressStats";
 import SearchBar from "@/components/academy/SearchBar";
-import ContentCard from "@/components/academy/ContentCard";
+import ContentCard, { LockReason } from "@/components/academy/ContentCard";
 import apiClient from "@/lib/api-client";
+import { useUserRole } from "@/context/UserRoleContext";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -43,10 +44,16 @@ const LANGUAGE_FILTERS = [
 export default function AcademyPage({ params }: PageProps) {
   const { locale } = React.use(params);
   const t = useTranslations("academy");
+  const { role } = useUserRole();
   const [activeTab, setActiveTab] = useState<"SHORT" | "MASTERCLASS">("SHORT");
   const [selectedLocale, setSelectedLocale] = useState<string | null>(null);
   const [contents, setContents] = useState<AcademyContentItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const resolveLockReason = (item: AcademyContentItem): LockReason | undefined => {
+    if (!item.is_locked) return undefined;
+    return role === "GUEST" ? "guest" : "prerequisite";
+  };
 
   useEffect(() => {
     // AbortController cancels in-flight requests when activeTab/selectedLocale changes,
@@ -180,6 +187,7 @@ export default function AcademyPage({ params }: PageProps) {
                   type={item.type}
                   isLocked={item.is_locked}
                   isNew={item.is_new}
+                  lockReason={resolveLockReason(item)}
                   progress={item.progress ?? undefined}
                 />
               ))

@@ -22,6 +22,7 @@ from src.routes.admin_users import router as admin_users_router
 from src.routes.announcements import router as announcements_router
 from src.routes.resource_links import router as resources_router
 from src.routes.admin_stats import router as admin_stats_router
+from src.routes.contact_info import router as contact_info_router
 
 settings = get_settings()
 
@@ -78,6 +79,9 @@ app.include_router(admin_stats_router, prefix="/api")
 app.include_router(announcements_router, prefix="/api")
 app.include_router(resources_router, prefix="/api")
 app.include_router(reference_codes_router, prefix="/api")
+
+# Contact Info (Public read + Admin write)
+app.include_router(contact_info_router, prefix="/api")
 
 
 # --- Health Check ---

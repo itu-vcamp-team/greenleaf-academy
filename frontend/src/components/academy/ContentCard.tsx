@@ -5,6 +5,16 @@ import { Link } from "@/i18n/navigation";
 import { Lock, CheckCircle, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+/**
+ * lockReason variants:
+ * - "guest"       : user is not logged in — lock is due to role, not prerequisite.
+ *                   Navigation to the detail page IS allowed (metadata visible).
+ * - "prerequisite": content is locked because the user hasn't completed a required
+ *                   prior lesson. Navigation is blocked (href="#").
+ * - undefined     : not locked, no reason needed.
+ */
+export type LockReason = "guest" | "prerequisite";
+
 interface ContentCardProps {
   id: string;
   title: string;
@@ -13,28 +23,48 @@ interface ContentCardProps {
   type: "SHORT" | "MASTERCLASS";
   isLocked: boolean;
   isNew?: boolean;
+  lockReason?: LockReason;
   progress?: {
     status: "not_started" | "in_progress" | "completed";
     completion_percentage: number;
   };
 }
 
+const DESC_MAX_CHARS = 110;
+
+function truncateDesc(text: string): string {
+  if (text.length <= DESC_MAX_CHARS) return text;
+  return text.slice(0, DESC_MAX_CHARS).trimEnd() + "…";
+}
+
 export default function ContentCard({
-  id, title, description, thumbnailUrl, type, isLocked, isNew, progress,
+  id, title, description, thumbnailUrl, type, isLocked, isNew, lockReason, progress,
 }: ContentCardProps) {
   const t = useTranslations("academy");
+
   const href = type === "SHORT" ? "/academy/shorts/" + id : "/academy/masterclass/" + id;
+
+  // Guests can navigate to detail pages (they'll see metadata but no video).
+  // Prerequisite-locked items are not navigable.
+  const resolvedHref = isLocked && lockReason !== "guest" ? "#" : href;
 
   const cardClassName = [
     "block rounded-xl overflow-hidden border border-foreground/5 transition-all hover:shadow-md bg-surface",
-    isLocked ? "cursor-not-allowed opacity-75" : "hover:border-primary/30"
+    isLocked && lockReason !== "guest"
+      ? "cursor-not-allowed opacity-75"
+      : isLocked
+      ? "hover:border-primary/20"          // guest-locked: navigable, subtle hover
+      : "hover:border-primary/30",         // unlocked
   ].join(" ");
 
+  // Lock hint message based on reason
+  const lockHintText = lockReason === "guest"
+    ? t("locked_hint_guest")
+    : t("locked_hint");
+
   return (
-    <Link
-      href={isLocked ? "#" : href}
-      className={cardClassName}
-    >
+    <Link href={resolvedHref} className={cardClassName}>
+      {/* Thumbnail */}
       <div className="relative aspect-video bg-foreground/5 text-foreground">
         {thumbnailUrl ? (
           <Image
@@ -45,7 +75,7 @@ export default function ContentCard({
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-             <div className="w-10 h-10 border-2 border-primary/20 rounded-full flex items-center justify-center text-primary/30 font-black italic">G</div>
+            <div className="w-10 h-10 border-2 border-primary/20 rounded-full flex items-center justify-center text-primary/30 font-black italic">G</div>
           </div>
         )}
 
@@ -69,17 +99,25 @@ export default function ContentCard({
         )}
       </div>
 
+      {/* Card Body */}
       <div className="p-3">
         <h3 className="font-bold text-foreground text-sm line-clamp-2 leading-tight h-9">{title}</h3>
-        
-        {!isLocked && description ? (
-          <p className="text-foreground/40 text-[11px] mt-1 line-clamp-1 italic">{description}</p>
-        ) : isLocked ? (
-          <p className="text-foreground/30 text-[10px] mt-1 italic leading-tight">
-            {t("locked_hint")}
-          </p>
-        ) : null}
 
+        {/* Description — always shown when available, truncated */}
+        {description && (
+          <p className="text-foreground/40 text-[11px] mt-1 italic leading-snug">
+            {truncateDesc(description)}
+          </p>
+        )}
+
+        {/* Lock hint — shown below description for locked items */}
+        {isLocked && (
+          <p className="text-foreground/30 text-[10px] mt-1.5 italic leading-tight">
+            {lockHintText}
+          </p>
+        )}
+
+        {/* Progress bar — only for unlocked + in-progress/completed */}
         {progress && !isLocked && progress.status !== "not_started" && (
           <div className="mt-3">
             <div className="flex justify-between text-[10px] text-foreground/40 mb-1">

@@ -3,13 +3,14 @@
 import { Navbar } from "@/components/ui/Navbar";
 import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { ChevronRight, Play, BookOpen, Clock, Shield, Target, Plus, Calendar, Globe, Zap, Users } from "lucide-react";
+import { ChevronRight, Clock, Shield, Target, Plus, Calendar, Users } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useUserRole } from "@/context/UserRoleContext";
 import { motion } from "framer-motion";
 import React, { useState, useEffect } from "react";
 import apiClient from "@/lib/api-client";
+import ContentCard from "@/components/academy/ContentCard";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -20,6 +21,16 @@ interface UpcomingEvent {
   title: string;
   start_time: string;
   contact_info?: string | null;
+}
+
+interface AcademyPreviewItem {
+  id: string;
+  title: string;
+  description?: string;
+  thumbnail_url?: string;
+  type: "SHORT" | "MASTERCLASS";
+  is_locked: boolean;
+  is_new: boolean;
 }
 
 function getTimeLeft(targetDate: Date) {
@@ -41,6 +52,8 @@ export default function Home({ params }: PageProps) {
 
   const [nextEvent, setNextEvent] = useState<UpcomingEvent | null>(null);
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const [previewContents, setPreviewContents] = useState<AcademyPreviewItem[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(true);
 
   // Redirect if logged in
   useEffect(() => {
@@ -67,6 +80,19 @@ export default function Home({ params }: PageProps) {
       });
   }, []);
 
+  // Fetch real academy content for the preview section
+  useEffect(() => {
+    apiClient
+      .get("/academy/contents?type=SHORT")
+      .then((res) => {
+        setPreviewContents((res.data as AcademyPreviewItem[]).slice(0, 6));
+      })
+      .catch(() => {
+        setPreviewContents([]);
+      })
+      .finally(() => setPreviewLoading(false));
+  }, []);
+
   // Live countdown ticker
   useEffect(() => {
     if (!nextEvent) return;
@@ -90,7 +116,7 @@ export default function Home({ params }: PageProps) {
       <div className="pt-32 px-6">
         <div className="max-w-7xl mx-auto">
           
-          {/* GLOBAL COUNTDOWN HOOK (MOVED TO TOP) */}
+          {/* GLOBAL COUNTDOWN HOOK */}
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -128,20 +154,14 @@ export default function Home({ params }: PageProps) {
                   <CountdownUnit value={timeLeft.seconds} label={isTR ? "SANİYE" : "SEK"} />
                 </div>
 
-                {role !== "GUEST" ? (
-                  <Button className="bg-primary hover:bg-primary-dark text-white rounded-2xl px-10 py-6 shadow-lg shadow-primary/20">
-                    {isTR ? "Eğitime Katıl" : "Teilnehmen"}
-                  </Button>
-                ) : (
-                  <div className="max-w-[140px] text-center">
-                    <div className="text-[10px] font-black text-primary/40 uppercase tracking-widest mb-1 italic">
-                       {isTR ? "Erişim Kısıtlı" : "Eingeschränkt"}
-                    </div>
-                    <div className="text-[11px] font-bold text-foreground/40 leading-tight">
-                      {isTR ? "Liderlik linkleri üyelerimize özeldir." : "Links sind exklusiv für Mitglieder."}
-                    </div>
+                <div className="max-w-[140px] text-center">
+                  <div className="text-[10px] font-black text-primary/40 uppercase tracking-widest mb-1 italic">
+                    {isTR ? "Erişim Kısıtlı" : "Restricted"}
                   </div>
-                )}
+                  <div className="text-[11px] font-bold text-foreground/40 leading-tight">
+                    {isTR ? "Liderlik linkleri üyelerimize özeldir." : "Links are exclusive for members."}
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -182,13 +202,13 @@ export default function Home({ params }: PageProps) {
               </Link>
               <Link href="/calendar">
                 <Button variant="outline" size="lg" className="px-8 py-7 rounded-2xl text-lg gap-3 border-foreground/10 group">
-                  <Calendar className="w-5 h-5 group-hover:text-primary transition-colors" /> {isTR ? "Canlı Eğitim Takvimi" : "Live-Kalender"}
+                  <Calendar className="w-5 h-5 group-hover:text-primary transition-colors" /> {isTR ? "Canlı Eğitim Takvimi" : "Live Calendar"}
                 </Button>
               </Link>
             </div>
           </section>
 
-          {/* PARTNER PERKS (ONLY FOR GUEST) */}
+          {/* PARTNER PERKS — only 3 cards: Dijital Cephanelik, Özel Workshoplar, Liderlik Paneli */}
           {role === "GUEST" && (
             <section id="imkanlar" className="mb-32 space-y-16">
               <div className="text-center space-y-4">
@@ -200,36 +220,27 @@ export default function Home({ params }: PageProps) {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <PerkCard 
-                  icon={<Globe className="w-6 h-6" />}
-                  title={isTR ? "Global Dağıtım Hakları" : "Global Rights"}
-                  desc={isTR ? "12+ ülkede resmi temsilcilik ve global cirodan pay alma hakkı." : "Official representation in 12+ countries and global turnover rights."}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <PerkCard 
                   icon={<Target className="w-6 h-6" />}
                   title={isTR ? "Dijital Cephanelik" : "Digital Arsenal"}
-                  desc={isTR ? "Yüksek dönüşümlü Reels senaryoları, PDF sunumlar ve teknik mühimmatlar." : "High-conversion Reels scripts, PDF presentations, and technical tools."}
+                  desc={isTR 
+                    ? "Yüksek dönüşümlü Reels senaryo eğitimleri, Masterclass eğitimleri ve teknik mühimmatlar."
+                    : "High-conversion Reels script trainings, Masterclass sessions, and technical tools."}
                 />
                 <PerkCard 
-                  icon={<Zap className="w-6 h-6" />}
-                  title={isTR ? "Canlı Mentorluk" : "Live Mentorship"}
-                  desc={isTR ? "Bölge liderleriyle haftalık strateji toplantıları ve saha desteği." : "Weekly strategy meetings with regional leads and field support."}
-                />
-                <PerkCard 
-                  icon={<Calendar className="w-6 h-6" />}
+                  icon={<Shield className="w-6 h-6" />}
                   title={isTR ? "Özel Workshoplar" : "Exclusive Workshops"}
-                  desc={isTR ? "Sadece partnerlere özel, kapalı devre profesyonel satış teknikleri eğitimi." : "Closed-circuit professional sales techniques training for partners only."}
-                />
-                <PerkCard 
-                  icon={<BookOpen className="w-6 h-6" />}
-                  title={isTR ? "Sertifikalı Eğitim" : "Certified Training"}
-                  desc={isTR ? "Akademi müfredatını tamamlayanlara özel Greenleaf onaylı başarı sertifikası." : "Greenleaf-approved success certificate for academy graduates."}
+                  desc={isTR 
+                    ? "Sadece partnerlere özel, kapalı devre profesyonel satış teknikleri eğitimleri webinarları."
+                    : "Closed-circuit professional sales techniques training webinars for partners only."}
                 />
                 <PerkCard 
                   icon={<Users className="w-6 h-6" />}
                   title={isTR ? "Liderlik Paneli" : "Leadership Panel"}
-                  desc={isTR ? "Kendi ekibinizi yönetebileceğiniz profesyonel aday ve istatistik takip paneli." : "Professional candidate and statistics tracking panel for team management."}
+                  desc={isTR 
+                    ? "Kendi ekibinizi yönetebileceğiniz profesyonel aday ve istatistik takip paneli."
+                    : "Professional candidate and statistics tracking panel to manage your own team."}
                 />
               </div>
             </section>
@@ -251,7 +262,7 @@ export default function Home({ params }: PageProps) {
                       {isTR ? "Tesadüflere yer yok. Greenleaf Akademi sizi adım adım bir müritten bir liderliğe taşır." : "No room for accidents. Greenleaf Academy takes you step-by-step from student to leader."}
                     </p>
                     <Link href="/auth/register">
-                        <Button className="rounded-xl px-10 py-6 text-sm">{isTR ? "Hemen Başvur" : "Apply Now"}</Button>
+                      <Button className="rounded-xl px-10 py-6 text-sm">{isTR ? "Hemen Başvur" : "Apply Now"}</Button>
                     </Link>
                   </div>
                   <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-8">
@@ -264,45 +275,55 @@ export default function Home({ params }: PageProps) {
             </section>
           )}
 
-          {/* ACADEMY PREVIEW (GUEST VS PARTNER) */}
+          {/* ACADEMY PREVIEW — real content from API */}
           <section id="akademi" className="space-y-12">
             <div className="flex justify-between items-end">
               <div>
                 <h2 className="text-4xl font-black tracking-tight mb-2">
-                  {isTR ? <>Eğitim <span className="text-primary italic">Kataloğu</span></> : <>Schulungs <span className="text-primary italic">Katalog</span></>}
+                  {isTR ? <>Eğitim <span className="text-primary italic">Kataloğu</span></> : <>Training <span className="text-primary italic">Catalog</span></>}
                 </h2>
                 <p className="text-foreground/40 max-w-md italic">
-                  {t("academy.continue_watching")}
+                  {isTR ? "Hazır içeriklere göz at, partnere özel erişim kazan." : "Browse available content and earn partner-exclusive access."}
                 </p>
               </div>
-              {role !== "GUEST" && (
-                <Link href="/academy">
-                  <Button variant="ghost" className="gap-2 font-bold text-primary">
-                    {isTR ? "Tümünü Gör" : "Alles sehen"} <Plus className="w-4 h-4" />
-                  </Button>
-                </Link>
-              )}
+              <Link href="/academy">
+                <Button variant="ghost" className="gap-2 font-bold text-primary">
+                  {isTR ? "Tümünü Gör" : "View All"} <Plus className="w-4 h-4" />
+                </Button>
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <AcademyPreviewCard 
-                title={isTR ? "Kanca (Hook) Tekniği" : "Hook-Technik"} 
-                desc={isTR ? "Sosyal medyada 0-5 saniyede adayı yakalama yöntemleri." : "Methoden, um Interessenten in 0-5 Sekunden zu fangen."}
-                locked={role === "GUEST"}
-                isTR={isTR}
-              />
-              <AcademyPreviewCard 
-                title={isTR ? "Sealuxe Ürün Tanıtımı" : "Sealuxe-Präsentation"} 
-                desc={isTR ? "Yüksek teknoloji cilt bakımı serisinin profesyonel sunumu." : "Professionelle Präsentation der High-Tech-Hautpflegeserie."}
-                locked={role === "GUEST"}
-                isTR={isTR}
-              />
-              <AcademyPreviewCard 
-                title={isTR ? "Kazanç Planı Matematiği" : "Vergütungsplan-Mathe"} 
-                desc={isTR ? "Greenleaf Global ile finansal özgürlük yol haritası." : "Fahrplan zur finanziellen Freiheit mit Greenleaf Global."}
-                locked={role === "GUEST"}
-                isTR={isTR}
-              />
+              {previewLoading ? (
+                Array(6).fill(0).map((_, i) => (
+                  <div key={i} className="aspect-video bg-foreground/5 rounded-2xl animate-pulse" />
+                ))
+              ) : previewContents.length > 0 ? (
+                previewContents.map((item) => (
+                  <ContentCard
+                    key={item.id}
+                    id={item.id}
+                    title={item.title}
+                    description={item.description}
+                    thumbnailUrl={item.thumbnail_url}
+                    type={item.type}
+                    isLocked={item.is_locked}
+                    isNew={item.is_new}
+                    lockReason="guest"
+                  />
+                ))
+              ) : (
+                <div className="col-span-full py-16 text-center">
+                  <p className="text-foreground/30 italic text-sm">
+                    {isTR ? "Henüz içerik eklenmemiş. Yakında!" : "No content yet. Coming soon!"}
+                  </p>
+                  <Link href="/auth/register" className="mt-4 inline-block">
+                    <Button className="rounded-xl px-8 py-5 mt-4">
+                      {isTR ? "Partnerlik İçin Başvur" : "Apply for Partnership"}
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </section>
 
@@ -343,36 +364,6 @@ function CountdownUnit({ value, label }: { value: number, label: string }) {
         {value.toString().padStart(2, '0')}
       </span>
       <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">{label}</span>
-    </div>
-  );
-}
-
-function AcademyPreviewCard({ title, desc, locked, isTR }: { title: string, desc: string, locked: boolean, isTR: boolean }) {
-  return (
-    <div className="relative group cursor-pointer">
-      <GlassCard className={`p-8 h-full border-foreground/5 shadow-sm transition-all duration-500 overflow-hidden rounded-[2.5rem] ${locked ? 'hover:border-primary/20' : 'hover:border-primary/50'}`}>
-        <div className="mb-6 w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center text-primary border border-primary/20">
-          <Play className="w-6 h-6" fill="currentColor" fillOpacity={0.1} />
-        </div>
-        
-        <h3 className="text-xl font-bold mb-3">{title}</h3>
-        <p className="text-foreground/50 text-sm leading-relaxed mb-6 italic">{desc}</p>
-        
-        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-foreground/30">
-          <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> 3:15 {isTR ? "dk" : "min"}</span>
-          <span className="flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5" /> {isTR ? "PDF Mevcut" : "PDF verfügbar"}</span>
-        </div>
-
-        {locked && (
-          <div className="absolute inset-x-0 inset-y-0 crystal-blur flex flex-col items-center justify-center p-6 text-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-            <Shield className="w-10 h-10 text-primary mb-4" />
-            <p className="text-sm font-bold mb-4">{isTR ? "Bu eğitim Partnerlere özeldir." : "Exklusiv für Partner."}</p>
-            <Link href="/auth/register">
-              <Button size="sm" className="rounded-xl">{isTR ? "Partner Ol ve İzle" : "Partner werden"}</Button>
-            </Link>
-          </div>
-        )}
-      </GlassCard>
     </div>
   );
 }

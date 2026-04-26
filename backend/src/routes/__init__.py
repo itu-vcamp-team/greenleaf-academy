@@ -13,7 +13,6 @@ from .admin_users import router as admin_users_router
 from .admin_stats import router as admin_stats_router
 from .announcements import router as announcements_router
 from .resource_links import router as resources_router
-from .waitlist import router as waitlist_router
 from .reference_codes import router as reference_codes_router
 
 __all__ = [
@@ -27,6 +26,5 @@ __all__ = [
     "admin_stats_router",
     "announcements_router",
     "resources_router",
-    "waitlist_router",
     "reference_codes_router",
 ]

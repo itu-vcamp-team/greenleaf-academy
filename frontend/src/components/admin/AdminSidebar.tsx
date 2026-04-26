@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, Users, MessageSquare, Files,
+  BarChart3, Users, MessageSquare,
   LogOut, ChevronLeft, ShieldCheck,
-  MousePointer2, Zap, Calendar,
+  Zap, Calendar, Phone,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -15,6 +15,7 @@ const menuItems = [
   { icon: Zap, label: "Akademi İçerikleri", href: "/admin/academy-content", color: "text-primary" },
   { icon: Calendar, label: "Etkinlikler", href: "/admin/events", color: "text-orange-500" },
   { icon: MessageSquare, label: "Duyurular & Kaynaklar", href: "/admin/content", color: "text-purple-500" },
+  { icon: Phone, label: "İletişim Bilgileri", href: "/admin/contact", color: "text-teal-500" },
 ];
 
 export function AdminSidebar() {
