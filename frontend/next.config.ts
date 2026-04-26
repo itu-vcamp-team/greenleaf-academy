@@ -7,17 +7,17 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 // YouTube needs frame-src + script-src for embeds.
 const CSP = [
   "default-src 'self'",
-  // Inline styles needed by Tailwind/framer-motion; Turnstile needs 'unsafe-eval' (official Cloudflare requirement)
+  // Turnstile needs 'unsafe-eval' (official Cloudflare requirement); YouTube embed scripts
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com https://s.ytimg.com",
-  // Turnstile renders an <iframe>; YouTube player (noCookie mode) needs youtube-nocookie.com
+  // Turnstile iframe + YouTube player (noCookie mode)
   "frame-src https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com https://drive.google.com",
-  // Turnstile verification XHR + backend API + YouTube player postMessage origin
-  "connect-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com",
+  // Turnstile uses blob: workers internally; XHR to Cloudflare + YouTube postMessage
+  "worker-src blob: https://challenges.cloudflare.com",
+  "connect-src 'self' blob: https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com",
   // Inline styles needed by many UI libs
   "style-src 'self' 'unsafe-inline'",
-  // YouTube thumbnails
-  "img-src 'self' data: blob: https://img.youtube.com https://i.ytimg.com",
-  // Allow fonts from self
+  // YouTube thumbnails + Cloudflare challenge images
+  "img-src 'self' data: blob: https://img.youtube.com https://i.ytimg.com https://challenges.cloudflare.com",
   "font-src 'self'",
 ].join("; ");
 
