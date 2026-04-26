@@ -26,6 +26,7 @@ from src.config import get_settings
 from src.logger import logger
 
 from src.utils.auth_deps import get_current_user, oauth2_scheme_strict
+from src.utils.hash_utils import hash_gl_username
 
 
 def mask_email(email: str) -> str:
@@ -79,8 +80,9 @@ async def register_step1(
     """
     Step 1: External Greenleaf Global verification.
     """
-    # 1. Check if this Global account is already registered
-    stmt = select(User).where(User.gl_username == data.gl_username)
+    # 1. Check if this Global account is already registered (using hash)
+    gl_hash = hash_gl_username(data.gl_username)
+    stmt = select(User).where(User.gl_username == gl_hash)
     res = await db.execute(stmt)
     if res.scalar_one_or_none():
         raise HTTPException(
@@ -101,7 +103,7 @@ async def register_step1(
     session_id = str(uuid.uuid4())
     temp_data = {
         "gl_verified": True,
-        "gl_username": data.gl_username
+        "gl_username_hash": gl_hash
     }
 
     r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
@@ -249,7 +251,7 @@ async def register_verify_otp(
         full_name=temp_data["full_name"],
         phone=temp_data.get("phone"),
         password_hash=temp_data["password_hash"],
-        gl_username=temp_data.get("gl_username"), # Save the verified GL username
+        gl_username=temp_data.get("gl_username_hash"), # Save the verified GL hash
         role=UserRole.PARTNER,
         is_active=is_active,
         is_verified=True, # Email is now verified via Step 4
