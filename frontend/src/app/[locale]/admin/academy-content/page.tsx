@@ -17,6 +17,7 @@ type ContentStatus = "PUBLISHED" | "DRAFT";
 interface AcademyContent {
   id: string;
   type: ContentType;
+  locale: string;
   title: string;
   description: string | null;
   video_url: string | null;
@@ -30,7 +31,7 @@ interface AcademyContent {
 
 const emptyForm = {
   type: "SHORT" as ContentType,
-  locale: "tr",
+  locale: "tr-TR",
   title: "",
   description: "",
   video_url: "",
@@ -78,7 +79,7 @@ export default function AdminAcademyContentPage() {
     setEditingId(item.id);
     setForm({
       type: item.type,
-      locale: "tr",
+      locale: item.locale ?? "tr-TR",
       title: item.title,
       description: item.description ?? "",
       video_url: item.video_url ?? "",
