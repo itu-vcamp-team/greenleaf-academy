@@ -7,8 +7,8 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 // YouTube needs frame-src + script-src for embeds.
 const CSP = [
   "default-src 'self'",
-  // Inline styles are needed by Tailwind/framer-motion; Turnstile + YouTube scripts
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.youtube.com https://s.ytimg.com",
+  // Inline styles needed by Tailwind/framer-motion; Turnstile needs 'unsafe-eval' (official Cloudflare requirement)
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com https://s.ytimg.com",
   // Turnstile renders an <iframe>; YouTube player also needs it
   "frame-src https://challenges.cloudflare.com https://www.youtube.com https://drive.google.com",
   // Turnstile verification XHR happens client-side during widget load

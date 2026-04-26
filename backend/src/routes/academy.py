@@ -85,7 +85,7 @@ async def list_admin_contents(
     result = await db.execute(stmt)
     contents = result.scalars().all()
     
-    return [ContentResponse.model_validate(c, update={"is_locked": False}) for c in contents]
+    return [ContentResponse.model_validate(c).model_copy(update={"is_locked": False}) for c in contents]
 
 
 @router.get("/contents/search", response_model=list[ContentResponse | GuestContentResponse])
@@ -192,7 +192,7 @@ async def create_content(
 ):
     """Create new academy content (Admin Only)."""
     content = await service.create_content(db, data.model_dump())
-    return ContentResponse.model_validate(content, update={"is_locked": False, "is_new": True})
+    return ContentResponse.model_validate(content).model_copy(update={"is_locked": False, "is_new": True})
 
 
 @router.patch("/contents/{content_id}", response_model=ContentResponse, dependencies=[Depends(get_current_admin)])
@@ -206,7 +206,7 @@ async def update_content(
     content = await service.update_content(db, content_id, data.model_dump(exclude_unset=True))
     if not content:
         raise NotFoundError()
-    return ContentResponse.model_validate(content, update={"is_locked": False})
+    return ContentResponse.model_validate(content).model_copy(update={"is_locked": False})
 
 
 @router.delete("/contents/{content_id}", dependencies=[Depends(get_current_admin)])
