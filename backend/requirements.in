@@ -26,8 +26,10 @@ bcrypt
 # Cache & Session
 redis
 
-# Email
-resend
+# Email (Gmail API)
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
 
 # Image processing
 Pillow>=10.4.0

@@ -34,8 +34,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
-    # Email (Resend)
-    RESEND_API_KEY: str
+    # Email (Gmail API – OAuth2 Refresh Token)
+    GMAIL_CLIENT_ID: str = ""
+    GMAIL_CLIENT_SECRET: str = ""
+    GMAIL_REFRESH_TOKEN: str = ""
     MAIL_FROM_ADDRESS: str = "noreply@greenleafakademi.com"
     MAIL_FROM_NAME: str = "Greenleaf Akademi"
 
