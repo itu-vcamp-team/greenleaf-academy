@@ -168,12 +168,14 @@ async def register_step3(
     # Generate OTP
     otp = await OTPService.generate_otp(f"reg_otp:{data.session_id}", purpose="registration")
     
-    # Send email (immediate for now, or background)
-    await MailingService.send_activation_email(
+    # Send email — hata varsa kullanıcıya bildir (OTP kritik)
+    sent = await MailingService.send_activation_email(
         to_email=data.email,
         code=otp,
         full_name=data.full_name
     )
+    if not sent:
+        raise HTTPException(status_code=503, detail="Doğrulama e-postası gönderilemedi. Lütfen tekrar deneyin.")
 
     await r.setex(f"reg_temp:{data.session_id}", 1800, json.dumps(temp_data))
     await r.aclose()
@@ -473,12 +475,13 @@ async def forgot_password(
         return {"message": "If this email is registered, you will receive a reset code."}
 
     otp = await OTPService.generate_otp(str(user.id), purpose="password_reset")
-    background_tasks.add_task(
-        MailingService.send_password_reset_email,
+    sent = await MailingService.send_password_reset_email(
         to_email=user.email,
         code=otp,
-        full_name=user.full_name
+        full_name=user.full_name,
     )
+    if not sent:
+        raise HTTPException(status_code=503, detail="Doğrulama e-postası gönderilemedi. Lütfen tekrar deneyin.")
 
     return {"message": "Reset code sent to your email."}
 
@@ -587,13 +590,14 @@ async def request_password_change(
         raise HTTPException(status_code=400, detail="Mevcut şifreniz hatalı.")
 
     otp = await OTPService.generate_otp(f"pwd_change:{current_user.id}", purpose="password_change")
-    
-    background_tasks.add_task(
-        MailingService.send_password_reset_email,
+
+    sent = await MailingService.send_password_reset_email(
         to_email=current_user.email,
         code=otp,
-        full_name=current_user.full_name
+        full_name=current_user.full_name,
     )
+    if not sent:
+        raise HTTPException(status_code=503, detail="Doğrulama e-postası gönderilemedi. Lütfen tekrar deneyin.")
 
     return {"message": "Doğrulama kodu e-postanıza gönderildi."}
 

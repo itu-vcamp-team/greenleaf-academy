@@ -25,12 +25,23 @@ def _get_gmail_service():
     OAuth2 refresh token kullanarak kimliği doğrulanmış bir Gmail API servisi döndürür.
     Her çağrıda gerekirse token otomatik olarak yenilenir.
     """
+    client_id = settings.GMAIL_CLIENT_ID
+    client_secret = settings.GMAIL_CLIENT_SECRET
+    refresh_token = settings.GMAIL_REFRESH_TOKEN
+
+    # DEBUG: credential kontrolü — production loglarında görünür (geçici, sorun çözülünce kaldır)
+    logger.warning(
+        f"[Gmail DEBUG] client_id={client_id[:20] if client_id else 'EMPTY'}...{client_id[-20:] if len(client_id) > 40 else '(kısa!)'} | "
+        f"client_secret={'SET(len=' + str(len(client_secret)) + ')' if client_secret else 'EMPTY'} | "
+        f"refresh_token={'SET(len=' + str(len(refresh_token)) + ')' if refresh_token else 'EMPTY'}"
+    )
+
     creds = Credentials(
         token=None,
-        refresh_token=settings.GMAIL_REFRESH_TOKEN,
+        refresh_token=refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
-        client_id=settings.GMAIL_CLIENT_ID,
-        client_secret=settings.GMAIL_CLIENT_SECRET,
+        client_id=client_id,
+        client_secret=client_secret,
         scopes=_GMAIL_SCOPES,
     )
     # Token süresi dolmuşsa yenile
