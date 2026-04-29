@@ -71,8 +71,9 @@ export default function SettingsPage() {
       await apiClient.patch("/auth/profile", profileData);
       toast.success("Profil bilgileriniz güncellendi.");
       await refreshUser();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Güncelleme başarısız.");
+    } catch (error: unknown) {
+      const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      toast.error(detail || "Güncelleme başarısız.");
     } finally {
       setProfileLoading(false);
     }
@@ -94,7 +95,7 @@ export default function SettingsPage() {
       });
       toast.success("Profil fotoğrafınız güncellendi.");
       await refreshUser();
-    } catch (error: any) {
+    } catch {
       toast.error("Fotoğraf yüklenemedi.");
     } finally {
       setProfileLoading(false);
@@ -114,8 +115,9 @@ export default function SettingsPage() {
       });
       setPwdStep(2);
       toast.success("Doğrulama kodu e-postanıza gönderildi.");
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Hata oluştu.");
+    } catch (error: unknown) {
+      const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      toast.error(detail || "Hata oluştu.");
     } finally {
       setPwdLoading(false);
     }
@@ -136,8 +138,9 @@ export default function SettingsPage() {
       toast.success("Şifreniz güncellendi. Yeniden giriş yapmalısınız.");
       logout();
       router.push("/auth/login");
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Doğrulama hatası.");
+    } catch (error: unknown) {
+      const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      toast.error(detail || "Doğrulama hatası.");
     } finally {
       setPwdLoading(false);
     }

@@ -17,6 +17,22 @@ interface Stats {
   total_contents: number;
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  created_at: string;
+}
+
+interface StatCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  details: string;
+  color: "blue" | "emerald" | "orange" | "indigo";
+  highlight?: boolean | null;
+  href?: string;
+}
+
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
@@ -25,7 +41,7 @@ export default function AdminDashboardPage({ params }: PageProps) {
   const { locale } = React.use(params);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -151,8 +167,8 @@ export default function AdminDashboardPage({ params }: PageProps) {
   );
 }
 
-function StatCard({ icon, label, value, details, color, highlight = false, href }: any) {
-  const colors: any = {
+function StatCard({ icon, label, value, details, color, highlight = false, href }: StatCardProps) {
+  const colors: Record<string, string> = {
     blue: "bg-blue-50 text-blue-600 border-blue-100",
     emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
     orange: "bg-orange-50 text-orange-600 border-orange-100",
