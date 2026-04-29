@@ -9,12 +9,19 @@ import { useAuthStore } from "@/store/auth.store";
 import { useThemeStore } from "@/store/theme.store";
 import {
   Sun, Moon, Calendar, User, LogOut, Menu, X,
-  Mail, Phone, Globe, Link2, MessageSquare, Play, ShieldCheck,
+  Mail, Phone, Globe, Link2, MessageSquare, Play, ShieldCheck, ChevronDown,
 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import apiClient from "@/lib/api-client";
+
+// ── Available locales (add more here as new languages are supported) ─────────
+
+const LOCALE_OPTIONS = [
+  { code: "tr-TR", label: "Türkçe", short: "TR", flag: "🇹🇷" },
+  { code: "en-US", label: "English", short: "EN", flag: "🇺🇸" },
+];
 
 // ── Contact Info Types ────────────────────────────────────────────────────────
 
@@ -54,6 +61,88 @@ function ContactTypeIcon({ type }: { type: ContactType }) {
   }
 }
 
+// ── Locale Switcher Dropdown ──────────────────────────────────────────────────
+
+function LocaleSwitcherDropdown({ compact = false }: { compact?: boolean }) {
+  const locale = useLocale();
+  const router = useRouter();
+  const i18nPathname = useI18nPathname();
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const current = LOCALE_OPTIONS.find((l) => l.code === locale) ?? LOCALE_OPTIONS[0];
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const switchTo = (code: string) => {
+    setOpen(false);
+    router.replace(i18nPathname, { locale: code });
+  };
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center gap-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/60 transition-all active:scale-95 ${
+          compact ? "p-2.5 text-xs font-black tracking-widest" : "px-3 py-2 text-xs font-black"
+        }`}
+        title="Dil / Language"
+      >
+        <span className="text-sm leading-none">{current.flag}</span>
+        <span className="tracking-widest">{current.short}</span>
+        <ChevronDown
+          className={`w-3 h-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full mt-2 right-0 w-40 glass rounded-2xl shadow-2xl shadow-black/10 border border-foreground/5 overflow-hidden z-[80]"
+          >
+            <div className="p-1.5">
+              {LOCALE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.code}
+                  onClick={() => switchTo(opt.code)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left ${
+                    opt.code === locale
+                      ? "bg-primary/10 text-primary font-black"
+                      : "text-foreground/70 hover:bg-foreground/5 hover:text-foreground font-bold"
+                  }`}
+                >
+                  <span className="text-base leading-none">{opt.flag}</span>
+                  <div className="flex-1">
+                    <p className="text-xs leading-none">{opt.label}</p>
+                    <p className="text-[10px] text-foreground/40 mt-0.5 leading-none">{opt.short}</p>
+                  </div>
+                  {opt.code === locale && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ── Main Navbar ───────────────────────────────────────────────────────────────
 
 export function Navbar() {
@@ -64,14 +153,9 @@ export function Navbar() {
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const router = useRouter();
   const pathname = usePathname();
-  const locale = useLocale();
-  const i18nPathname = useI18nPathname();
-  const otherLocale = locale === "tr-TR" ? "en-US" : "tr-TR";
-  const localeLabel = locale === "tr-TR" ? "TR" : "EN";
-  const switchLocale = () => router.replace(i18nPathname, { locale: otherLocale });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Contact info state (Task 5)
+  // Contact info state
   const [contacts, setContacts] = useState<ContactEntry[]>([]);
   const [contactsOpen, setContactsOpen] = useState(false);
   const [mobileContactsOpen, setMobileContactsOpen] = useState(false);
@@ -89,7 +173,7 @@ export function Navbar() {
       .catch(() => setContacts([]));
   }, [role]);
 
-  // Close desktop dropdown on outside click
+  // Close desktop contacts dropdown on outside click
   useEffect(() => {
     if (!contactsOpen) return;
     const handler = (e: MouseEvent) => {
@@ -106,7 +190,6 @@ export function Navbar() {
     router.push("/");
   };
 
-  // "home" for partners already points to /dashboard — no duplicate dashboard link needed
   const navLinks = [
     { href: isGuest ? "/" : "/dashboard", label: t("home"), icon: <User className="w-4 h-4" /> },
     { href: "/calendar", label: t("calendar"), icon: <Calendar className="w-4 h-4" /> },
@@ -138,7 +221,7 @@ export function Navbar() {
               </NavLink>
             ))}
 
-            {/* Task 5: İletişim dropdown — only when contacts exist and not admin */}
+            {/* İletişim dropdown — only when contacts exist and not admin */}
             {showContacts && (
               <div ref={contactRef} className="relative">
                 <button
@@ -193,8 +276,8 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Right side: admin panel + theme toggle + lang switcher + auth buttons */}
-          <div className="flex items-center gap-2 md:gap-4 shrink-0">
+          {/* Right side */}
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
             {(role === "ADMIN" || role === "EDITOR") && (
               <div className="hidden md:block">
                 <Link href="/admin">
@@ -204,18 +287,18 @@ export function Navbar() {
                 </Link>
               </div>
             )}
+
+            {/* Theme toggle */}
             <button
               onClick={toggleTheme}
               className="p-2.5 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/60 transition-all active:scale-95"
+              title={theme === "light" ? "Koyu moda geç" : "Açık moda geç"}
             >
               {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
-            <button
-              onClick={switchLocale}
-              className="p-2.5 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/60 transition-all active:scale-95 text-xs font-black tracking-widest"
-            >
-              {localeLabel}
-            </button>
+
+            {/* Locale switcher dropdown */}
+            <LocaleSwitcherDropdown compact />
 
             <div className="hidden md:flex items-center gap-2">
               {isGuest ? (
@@ -293,7 +376,7 @@ export function Navbar() {
                 </Link>
               ))}
 
-              {/* Task 5: İletişim in mobile menu */}
+              {/* İletişim in mobile */}
               {showContacts && (
                 <div>
                   <button
@@ -312,7 +395,7 @@ export function Navbar() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="ml-17 pl-4 ml-[68px] flex flex-col gap-1"
+                        className="ml-[68px] pl-4 flex flex-col gap-1"
                       >
                         {contacts.map((c) => (
                           <a
@@ -342,6 +425,7 @@ export function Navbar() {
             </div>
 
             <div className="mt-auto space-y-4 pt-6">
+              {/* Theme + Locale */}
               <div className="flex items-center gap-3">
                 <button
                   onClick={toggleTheme}
@@ -350,13 +434,15 @@ export function Navbar() {
                   {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                   {theme === "light" ? "Koyu" : "Açık"}
                 </button>
-                <button
-                  onClick={switchLocale}
-                  className="flex-1 flex items-center justify-center py-3 rounded-2xl bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/60 transition-all active:scale-95 text-xs font-black tracking-widest"
-                >
-                  {localeLabel}
-                </button>
+
+                {/* Mobile locale switcher — inline list */}
+                <div className="flex gap-1">
+                  {LOCALE_OPTIONS.map((opt) => (
+                    <LocaleMobileButton key={opt.code} opt={opt} />
+                  ))}
+                </div>
               </div>
+
               {isGuest ? (
                 <div className="grid grid-cols-2 gap-4">
                   <Link href="/auth/login" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
@@ -390,6 +476,28 @@ export function Navbar() {
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+// Mobile locale button — uses the router hook directly (needs to be a component)
+function LocaleMobileButton({ opt }: { opt: typeof LOCALE_OPTIONS[number] }) {
+  const locale = useLocale();
+  const router = useRouter();
+  const i18nPathname = useI18nPathname();
+  const isActive = opt.code === locale;
+
+  return (
+    <button
+      onClick={() => router.replace(i18nPathname, { locale: opt.code })}
+      className={`flex items-center justify-center gap-1.5 px-3 py-3 rounded-2xl border transition-all active:scale-95 text-xs font-black ${
+        isActive
+          ? "bg-primary/10 border-primary/30 text-primary"
+          : "bg-foreground/5 border-foreground/5 text-foreground/60 hover:bg-foreground/10"
+      }`}
+    >
+      <span>{opt.flag}</span>
+      <span className="tracking-widest">{opt.short}</span>
+    </button>
   );
 }
 

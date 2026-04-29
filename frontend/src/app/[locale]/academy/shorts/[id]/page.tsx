@@ -32,7 +32,7 @@ interface PageProps {
 }
 
 export default function ShortsPlayerPage({ params }: PageProps) {
-  const { id, locale } = React.use(params);
+  const { id } = React.use(params);
   const t = useTranslations("academy");
   const [content, setContent] = useState<ContentDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,6 @@ export default function ShortsPlayerPage({ params }: PageProps) {
   }, [id]);
 
   const handleAddFavorite = async () => {
-    // This functionality is mock for now as per Task 10 feedback (To be implemented in Task 13)
     console.log("Add to favorites:", id);
   };
 
@@ -57,21 +56,21 @@ export default function ShortsPlayerPage({ params }: PageProps) {
   if (!content) return <LockedContent t={t} />;
 
   return (
-    <div className="min-h-screen bg-white text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
       <main className="max-w-xl mx-auto pt-24 px-4 pb-12">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">
+        <nav className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-foreground/40 mb-6">
           <Link href="/academy" className="hover:text-primary transition-colors">Akademi</Link>
           <ChevronRight size={10} />
-          <span className="text-gray-400">Shorts</span>
+          <span className="text-foreground/40">Shorts</span>
           <ChevronRight size={10} />
-          <span className="text-gray-900 line-clamp-1">{content.title}</span>
+          <span className="text-foreground line-clamp-1">{content.title}</span>
         </nav>
 
         {/* Video Player - 9:16 vertical style */}
-        <div className="relative mx-auto shadow-2xl rounded-[2.5rem] overflow-hidden border-8 border-gray-900 bg-black"
+        <div className="relative mx-auto shadow-2xl rounded-[2.5rem] overflow-hidden border-8 border-foreground/10 bg-black"
              style={{ maxWidth: "340px", aspectRatio: "9/16" }}>
           {content.is_locked ? (
             <LockedVideoOverlay />
@@ -89,9 +88,9 @@ export default function ShortsPlayerPage({ params }: PageProps) {
 
         {/* Information Section */}
         <div className="mt-8 text-center sm:text-left">
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight leading-tight">{content.title}</h1>
+          <h1 className="text-2xl font-black text-foreground tracking-tight leading-tight">{content.title}</h1>
           {content.description && (
-            <p className="text-gray-500 text-sm mt-3 leading-relaxed border-l-2 border-primary/20 pl-4 italic">
+            <p className="text-foreground/60 text-sm mt-3 leading-relaxed border-l-2 border-primary/20 pl-4 italic">
               {content.description}
             </p>
           )}
@@ -132,8 +131,8 @@ export default function ShortsPlayerPage({ params }: PageProps) {
               className={`flex items-center justify-center gap-3 w-full py-4 px-6
                          rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
                 isCompleted
-                  ? "bg-green-100 text-green-700 border border-green-200"
-                  : "bg-gray-50 text-gray-400 border border-gray-100"
+                  ? "bg-green-500/10 text-green-600 border border-green-500/20"
+                  : "bg-foreground/5 text-foreground/40 border border-foreground/10"
               }`}
             >
               <CheckCircle size={16} />
@@ -141,8 +140,21 @@ export default function ShortsPlayerPage({ params }: PageProps) {
             </div>
           )}
 
+          {/* Favorite Button */}
+          {!content.is_locked && (
+            <button
+              onClick={handleAddFavorite}
+              className="flex items-center justify-center gap-3 w-full py-4 px-6
+                         border border-foreground/10 text-foreground/40 rounded-2xl font-black text-xs uppercase tracking-widest
+                         hover:border-primary/30 hover:text-primary transition-all"
+            >
+              <BookmarkPlus size={16} />
+              {t("add_favorite")}
+            </button>
+          )}
+
           {/* Navigation Area */}
-          <div className="grid grid-cols-2 gap-4 mt-6 border-t border-gray-100 pt-6">
+          <div className="grid grid-cols-2 gap-4 mt-6 border-t border-foreground/10 pt-6">
             <Link href={content.prev_id ? `/academy/shorts/${content.prev_id}` : "#"}>
               <Button
                 variant="outline"
@@ -169,14 +181,14 @@ export default function ShortsPlayerPage({ params }: PageProps) {
 
 function ShortsPlayerSkeleton() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <div className="max-w-xl mx-auto pt-24 px-4 pb-12 animate-pulse">
-        <div className="h-3 bg-gray-100 rounded w-48 mb-6" />
-        <div className="mx-auto bg-gray-100 rounded-[2.5rem]" style={{ maxWidth: "340px", aspectRatio: "9/16" }} />
+        <div className="h-3 bg-foreground/10 rounded w-48 mb-6" />
+        <div className="mx-auto bg-foreground/10 rounded-[2.5rem]" style={{ maxWidth: "340px", aspectRatio: "9/16" }} />
         <div className="mt-8 space-y-3 px-4">
-          <div className="h-8 bg-gray-100 rounded w-3/4" />
-          <div className="h-4 bg-gray-100 rounded w-full" />
+          <div className="h-8 bg-foreground/10 rounded w-3/4" />
+          <div className="h-4 bg-foreground/10 rounded w-full" />
         </div>
       </div>
     </div>
@@ -196,7 +208,7 @@ function LockedVideoOverlay() {
   );
 }
 
-function LockedContent({ t }: { t: any }) {
+function LockedContent({ t }: { t: ReturnType<typeof useTranslations> }) {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Navbar />
@@ -209,7 +221,7 @@ function LockedContent({ t }: { t: any }) {
           <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6 mx-auto border border-primary/20 shadow-lg shadow-primary/10">
             <Lock className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-3xl font-black mb-4 tracking-tight drop-shadow-sm">{t("locked")}</h2>
+          <h2 className="text-3xl font-black mb-4 tracking-tight">{t("locked")}</h2>
           <p className="text-foreground/70 text-sm mb-8 leading-relaxed font-medium">
             {t("locked_hint")}
           </p>

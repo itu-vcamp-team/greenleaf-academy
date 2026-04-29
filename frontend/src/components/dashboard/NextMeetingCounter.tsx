@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { CalendarPlus, CheckCircle, AlertCircle, Play, Loader2, X } from "lucide-react";
+import { CalendarPlus, CheckCircle, AlertCircle, Play, Loader2, X, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
@@ -38,16 +38,17 @@ type CalState = "idle" | "form" | "loading" | "success" | "error";
 
 export function NextMeetingCounter() {
   const { role } = useUserRole();
-  const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const isGuest = role === "GUEST" || !isAuthenticated();
 
   const [nextEvent, setNextEvent] = useState<UpcomingEvent | null>(null);
-  const [timeLeft, setTimeLeft] = useState(getTimeLeft(new Date()));
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, total: 0 });
+  /** true when no real event was found — show a placeholder */
   const [isFallback, setIsFallback] = useState(false);
+  /** true when the API returned successfully but with an empty list */
+  const [noEvents, setNoEvents] = useState(false);
 
-  // Calendar invite state — initialized from server-side is_rsvped once event loads
   const [calState, setCalState] = useState<CalState>("idle");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [guestEmail, setGuestEmail] = useState("");
@@ -63,37 +64,46 @@ export function NextMeetingCounter() {
           setNextEvent(res.data[0]);
           setTimeLeft(getTimeLeft(new Date(res.data[0].start_time)));
           setIsFallback(false);
+          setNoEvents(false);
         } else {
-          throw new Error("No events");
+          // API succeeded but returned no events
+          setNoEvents(true);
+          setIsFallback(false);
+          setNextEvent(null);
         }
       } catch {
-        // Show motivational placeholder — no real event countdown
-        const placeholder = new Date();
-        placeholder.setHours(placeholder.getHours() + 14);
-        setNextEvent({
-          id: "placeholder",
-          title: "Gelecek Eğitim & Toplantı",
-          start_time: placeholder.toISOString(),
-          category: "PLANLANIYOR",
-          meeting_link: null,
-          visibility: "ALL",
-        });
-        setTimeLeft(getTimeLeft(placeholder));
-        setIsFallback(true);
+        // API error — show motivational placeholder for authenticated users
+        if (!isGuest) {
+          const placeholder = new Date();
+          placeholder.setHours(placeholder.getHours() + 14);
+          setNextEvent({
+            id: "placeholder",
+            title: "Gelecek Eğitim & Toplantı",
+            start_time: placeholder.toISOString(),
+            category: "PLANLANIYOR",
+            meeting_link: null,
+            visibility: "ALL",
+          });
+          setTimeLeft(getTimeLeft(placeholder));
+          setIsFallback(true);
+        } else {
+          // Guest got an error — treat as no events
+          setNoEvents(true);
+        }
       }
     };
 
     fetchNextEvent();
-  }, []);
+  }, [isGuest]);
 
-  // ── Sync calState with server-side is_rsvped once event loads ────────────
+  // ── Sync calState with server-side is_rsvped ─────────────────────────────
   useEffect(() => {
     if (nextEvent?.is_rsvped) setCalState("success");
   }, [nextEvent]);
 
-  // ── Countdown tick — every 60 s (no seconds displayed) ────────────────────
+  // ── Countdown tick — every 60 s ───────────────────────────────────────────
   useEffect(() => {
-    if (!nextEvent) return;
+    if (!nextEvent || noEvents) return;
     const target = new Date(nextEvent.start_time);
     const timer = setInterval(() => {
       const remaining = getTimeLeft(target);
@@ -101,20 +111,17 @@ export function NextMeetingCounter() {
       if (remaining.total <= 0) clearInterval(timer);
     }, 60_000);
     return () => clearInterval(timer);
-  }, [nextEvent]);
+  }, [nextEvent, noEvents]);
 
   // ── Calendar invite handlers ───────────────────────────────────────────────
   const handleCalendarClick = useCallback(async () => {
     if (!nextEvent || isFallback) return;
 
     if (isGuest) {
-      // Open inline form to collect name + email
       setCalState("form");
       setCalError("");
       return;
     }
-
-    // Authenticated user — call GET endpoint directly
     setCalState("loading");
     try {
       await apiClient.get(`/events/${nextEvent.id}/add-to-calendar`);
@@ -149,7 +156,6 @@ export function NextMeetingCounter() {
           (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
           "Bir hata oluştu. Lütfen tekrar deneyin.";
         setCalError(detail);
-        // Stay on form so user can retry
       } finally {
         setIsSubmitting(false);
       }
@@ -165,14 +171,72 @@ export function NextMeetingCounter() {
     setIsSubmitting(false);
   };
 
+  // ── No upcoming events for guest → show clean 00:00 state ─────────────────
+  if (noEvents) {
+    return (
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="w-full mb-12">
+        <div className="relative overflow-hidden glass rounded-[2.5rem] p-1 border-foreground/10 shadow-xl shadow-black/5">
+          <div className="relative z-10 bg-transparent rounded-[2.4rem] px-6 md:px-10 py-8 flex flex-col lg:flex-row items-center justify-between gap-8">
+            {/* Left: Icon + label */}
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 rounded-2xl bg-foreground/5 flex items-center justify-center text-foreground/30 border border-foreground/10 flex-shrink-0">
+                <Calendar size={28} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-foreground/30 mb-2 italic">
+                  MOMENTUM VISION
+                </p>
+                <h2 className="text-2xl md:text-3xl font-black text-foreground/50 tracking-tight leading-none mb-3">
+                  Yaklaşan Etkinlik Yok
+                </h2>
+                <p className="text-xs text-foreground/40 font-medium">
+                  {isGuest
+                    ? "Kayıt olarak partner etkinliklerine erişebilirsiniz."
+                    : "Yeni etkinlikler için takipte kalın."}
+                </p>
+              </div>
+            </div>
+
+            {/* Center: 00:00 countdown */}
+            <div className="flex items-center gap-4 md:gap-8 bg-foreground/5 px-8 py-5 rounded-[2rem] border border-foreground/10 shadow-sm flex-shrink-0">
+              <TimeUnit value={0} label="SAAT" dim />
+              <Divider />
+              <TimeUnit value={0} label="DAKİKA" dim />
+            </div>
+
+            {/* Right: CTA */}
+            <div className="flex flex-col items-center gap-3 min-w-[200px]">
+              {isGuest ? (
+                <Link href="/auth/register" className="w-full">
+                  <Button className="w-full rounded-2xl h-12 px-8 bg-primary hover:bg-primary/90 text-white font-black italic tracking-tight gap-2 shadow-xl shadow-primary/20">
+                    Partner Ol
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/calendar" className="w-full">
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-2xl h-12 px-6 font-black italic tracking-tight gap-2 border-primary/30 text-primary hover:bg-primary/5"
+                  >
+                    <Calendar size={16} />
+                    Takvime Git
+                  </Button>
+                </Link>
+              )}
+              <p className="text-[10px] font-black text-foreground/30 uppercase tracking-widest italic text-center">
+                Yeni etkinlikler için takipte kalın
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   if (!nextEvent) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full mb-12"
-    >
+    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="w-full mb-12">
       <div className="relative overflow-hidden glass rounded-[2.5rem] p-1 border-primary/20 shadow-2xl shadow-primary/5">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 animate-pulse" />
 
@@ -209,7 +273,7 @@ export function NextMeetingCounter() {
             </div>
           </div>
 
-          {/* ── Countdown (days / hours / minutes — no seconds) ── */}
+          {/* ── Countdown ── */}
           <div className="flex items-center gap-4 md:gap-8 bg-foreground/5 px-8 py-5 rounded-[2rem] border border-foreground/10 shadow-sm flex-shrink-0">
             {timeLeft.days > 0 && (
               <>
@@ -224,14 +288,9 @@ export function NextMeetingCounter() {
 
           {/* ── Action Buttons ── */}
           <div className="flex flex-col items-center gap-3 min-w-[200px]">
-            {/* Join button — shown only for authenticated users with a meeting link */}
-            {!isGuest && nextEvent.meeting_link && (
-              <a
-                href={nextEvent.meeting_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full"
-              >
+            {/* Join button — authenticated + meeting link only */}
+            {!isGuest && nextEvent.meeting_link && !isFallback && (
+              <a href={nextEvent.meeting_link} target="_blank" rel="noopener noreferrer" className="w-full">
                 <Button className="w-full rounded-2xl h-12 px-8 bg-primary hover:bg-primary/90 text-white font-black italic tracking-tight gap-2 shadow-xl shadow-primary/20 transition-transform hover:scale-105 active:scale-95">
                   <Play size={16} fill="currentColor" />
                   YAYINA KATIL
@@ -239,7 +298,7 @@ export function NextMeetingCounter() {
               </a>
             )}
 
-            {/* Add to Calendar button / form */}
+            {/* Calendar add — not for fallback events */}
             {!isFallback && (
               <AnimatePresence mode="wait">
                 {calState === "success" ? (
@@ -247,7 +306,7 @@ export function NextMeetingCounter() {
                     key="success"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="flex items-center gap-2 text-emerald-600 font-black text-sm bg-emerald-50 dark:bg-emerald-900/20 px-5 py-3 rounded-2xl border border-emerald-200 dark:border-emerald-800"
+                    className="flex items-center gap-2 text-emerald-600 font-black text-sm bg-emerald-500/10 px-5 py-3 rounded-2xl border border-emerald-500/20"
                   >
                     <CheckCircle size={16} />
                     E-posta gönderildi!
@@ -353,34 +412,35 @@ export function NextMeetingCounter() {
               </AnimatePresence>
             )}
 
-            {/* Fallback / no-meeting-link hint for guests */}
-            {(isFallback || (!nextEvent.meeting_link && isGuest)) && (
+            {/* Fallback hint */}
+            {isFallback && (
               <div className="text-center px-2">
                 <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-1 italic">
-                  {isFallback ? "HAZIR OLUN" : "BİLGİ BEKLENIYOR"}
+                  TAKİPTE KALIN
                 </p>
                 <p className="text-[11px] font-bold text-foreground/50 leading-tight">
-                  {isFallback
-                    ? "Yeni etkinlikler için takipte kalın."
-                    : "Yayın linkleri yalnızca partner üyelerine gönderilir."}
+                  Yeni etkinlikler yakında duyurulacak.
                 </p>
               </div>
             )}
           </div>
-
         </div>
       </div>
     </motion.div>
   );
 }
 
-function TimeUnit({ value, label }: { value: number; label: string }) {
+function TimeUnit({ value, label, dim = false }: { value: number; label: string; dim?: boolean }) {
   return (
     <div className="flex flex-col items-center min-w-[45px]">
-      <span className="text-2xl md:text-4xl font-black text-foreground tabular-nums tracking-tighter">
+      <span
+        className={`text-2xl md:text-4xl font-black tabular-nums tracking-tighter ${
+          dim ? "text-foreground/20" : "text-foreground"
+        }`}
+      >
         {value.toString().padStart(2, "0")}
       </span>
-      <span className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.2em]">
+      <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${dim ? "text-foreground/20" : "text-foreground/40"}`}>
         {label}
       </span>
     </div>

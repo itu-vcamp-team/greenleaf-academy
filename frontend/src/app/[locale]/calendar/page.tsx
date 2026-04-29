@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar as CalendarIcon, Clock, Link as LinkIcon, Plus, Trash2,
-  ChevronLeft, ChevronRight, Video, Shield, X, MapPin, Phone, CalendarPlus, CheckCircle, Loader2, AlertCircle,
+  ChevronLeft, ChevronRight, Video, Shield, X, MapPin, Phone,
+  CalendarPlus, CheckCircle, Loader2, AlertCircle, Lock,
 } from "lucide-react";
 
 import { Navbar } from "@/components/ui/Navbar";
@@ -16,7 +17,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { Link } from "@/i18n/navigation";
 import apiClient from "@/lib/api-client";
 
-// Matches the backend EventResponse schema exactly
+// Matches the backend EventResponse / GuestEventResponse schema
 interface CalendarEvent {
   id: string;
   title: string;
@@ -38,11 +39,18 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  /** Day of month selected for filtering, or null for all */
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+  // Calendar month navigation
+  const today = new Date();
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth() + 1); // 1-indexed
 
   const fetchEvents = () => {
-    const now = new Date();
+    setLoading(true);
     apiClient
-      .get(`/events/calendar?year=${now.getFullYear()}&month=${now.getMonth() + 1}`)
+      .get(`/events/calendar?year=${viewYear}&month=${viewMonth}`)
       .then((res) => setEvents(res.data))
       .catch((err) => console.error("Failed to fetch events:", err))
       .finally(() => setLoading(false));
@@ -50,7 +58,18 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+    setSelectedDay(null); // reset filter on month change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewYear, viewMonth]);
+
+  const navigateMonth = (delta: number) => {
+    setViewMonth((m) => {
+      const next = m + delta;
+      if (next > 12) { setViewYear((y) => y + 1); return 1; }
+      if (next < 1)  { setViewYear((y) => y - 1); return 12; }
+      return next;
+    });
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Bu etkinliği silmek istediğinize emin misiniz?")) return;
@@ -61,6 +80,17 @@ export default function CalendarPage() {
       console.error("Delete event failed:", err);
     }
   };
+
+  // Filter events by selected day (if any)
+  const displayedEvents = selectedDay
+    ? events.filter((e) => new Date(e.start_time).getDate() === selectedDay)
+    : events;
+
+  // Month label for header
+  const monthLabel = new Date(viewYear, viewMonth - 1, 1).toLocaleDateString("tr-TR", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,35 +109,73 @@ export default function CalendarPage() {
           </div>
 
           {role === "ADMIN" && (
-            <Button onClick={() => setIsAdding(true)} className="gap-2 rounded-2xl px-8 shadow-lg shadow-primary/20">
+            <Button
+              onClick={() => setIsAdding(true)}
+              className="gap-2 rounded-2xl px-8 shadow-lg shadow-primary/20"
+            >
               <Plus className="w-5 h-5" /> Yeni Etkinlik Ekle
             </Button>
           )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Mini Calendar Sidebar */}
+          {/* ── Mini Calendar Sidebar ── */}
           <div className="lg:col-span-1 space-y-6">
             <GlassCard className="p-6 border-foreground/5 shadow-sm">
-              <div className="flex items-center justify-between mb-8 text-foreground">
-                <h3 className="font-bold text-lg">
-                  {new Date().toLocaleDateString("tr-TR", { month: "long", year: "numeric" })}
-                </h3>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" className="w-8 h-8 p-0 rounded-full hover:bg-foreground/5">
+              {/* Month navigation */}
+              <div className="flex items-center justify-between mb-6 text-foreground">
+                <h3 className="font-bold text-lg capitalize">{monthLabel}</h3>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-8 h-8 p-0 rounded-full hover:bg-foreground/5"
+                    onClick={() => navigateMonth(-1)}
+                  >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="w-8 h-8 p-0 rounded-full hover:bg-foreground/5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-8 h-8 p-0 rounded-full hover:bg-foreground/5"
+                    onClick={() => navigateMonth(1)}
+                  >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-              <div className="grid grid-cols-7 gap-1 text-center mb-4">
+
+              {/* Day-of-week headers */}
+              <div className="grid grid-cols-7 gap-1 text-center mb-3">
                 {["Pt", "Sa", "Ça", "Pe", "Cu", "Ct", "Pz"].map((d) => (
-                  <span key={d} className="text-[10px] font-black text-foreground/20 uppercase">{d}</span>
+                  <span key={d} className="text-[10px] font-black text-foreground/20 uppercase">
+                    {d}
+                  </span>
                 ))}
               </div>
-              <MiniCalendarDays events={events} />
+
+              <MiniCalendarDays
+                events={events}
+                year={viewYear}
+                month={viewMonth}
+                selectedDay={selectedDay}
+                onSelectDay={(day) => setSelectedDay((prev) => (prev === day ? null : day))}
+              />
+
+              {/* Filter badge */}
+              {selectedDay && (
+                <div className="mt-4 flex items-center justify-between px-1">
+                  <span className="text-xs text-primary font-bold">
+                    {selectedDay} {new Date(viewYear, viewMonth - 1, selectedDay).toLocaleDateString("tr-TR", { month: "long" })} etkinlikleri
+                  </span>
+                  <button
+                    onClick={() => setSelectedDay(null)}
+                    className="text-foreground/30 hover:text-foreground/60 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </GlassCard>
 
             <div className="p-6 bg-primary/5 rounded-[2rem] border border-primary/10">
@@ -116,28 +184,48 @@ export default function CalendarPage() {
                 Tüm yayınlar kayıt altına alınmakta ve 24 saat sonra Akademi - Masterclass bölümüne yüklenmektedir.
               </p>
             </div>
+
+            {/* Legend */}
+            <div className="p-4 glass rounded-2xl border-foreground/5 space-y-2">
+              <p className="text-[10px] font-black text-foreground/30 uppercase tracking-widest mb-3">Gösterge</p>
+              <div className="flex items-center gap-2 text-xs text-foreground/60">
+                <span className="w-2 h-2 rounded-full bg-primary" />
+                Herkese Açık Etkinlik
+              </div>
+              <div className="flex items-center gap-2 text-xs text-foreground/60">
+                <Lock className="w-3 h-3 text-foreground/30" />
+                Sadece Partner Etkinliği
+              </div>
+            </div>
           </div>
 
-          {/* Event List */}
+          {/* ── Event List ── */}
           <div className="lg:col-span-2 space-y-4">
             {loading ? (
-              Array(3).fill(0).map((_, i) => (
-                <div key={i} className="h-36 bg-foreground/5 rounded-3xl animate-pulse border border-foreground/5" />
-              ))
-            ) : events.length === 0 ? (
+              Array(3)
+                .fill(0)
+                .map((_, i) => (
+                  <div key={i} className="h-36 bg-foreground/5 rounded-3xl animate-pulse border border-foreground/5" />
+                ))
+            ) : displayedEvents.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <CalendarIcon className="w-12 h-12 text-foreground/10 mb-4" />
-                <p className="text-foreground/40 font-medium text-sm italic">Yaklaşan etkinlik bulunmuyor.</p>
+                <p className="text-foreground/40 font-medium text-sm italic">
+                  {selectedDay ? "Bu tarihte etkinlik bulunmuyor." : "Yaklaşan etkinlik bulunmuyor."}
+                </p>
+                {selectedDay && (
+                  <button
+                    onClick={() => setSelectedDay(null)}
+                    className="mt-3 text-xs text-primary underline hover:no-underline"
+                  >
+                    Tüm etkinlikleri göster
+                  </button>
+                )}
               </div>
             ) : (
               <AnimatePresence mode="popLayout">
-                {events.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    role={role}
-                    onDelete={handleDelete}
-                  />
+                {displayedEvents.map((event) => (
+                  <EventCard key={event.id} event={event} role={role} onDelete={handleDelete} />
                 ))}
               </AnimatePresence>
             )}
@@ -157,42 +245,69 @@ export default function CalendarPage() {
   );
 }
 
-function MiniCalendarDays({ events }: { events: CalendarEvent[] }) {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay();
-  const offset = (firstDay + 6) % 7;
+// ── Mini Calendar Days ─────────────────────────────────────────────────────────
 
-  const eventDays = new Set(
-    events.map((e) => new Date(e.start_time).getDate())
-  );
+function MiniCalendarDays({
+  events,
+  year,
+  month,
+  selectedDay,
+  onSelectDay,
+}: {
+  events: CalendarEvent[];
+  year: number;
+  month: number;
+  selectedDay: number | null;
+  onSelectDay: (day: number) => void;
+}) {
+  const today = new Date();
+  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const firstDay = new Date(year, month - 1, 1).getDay();
+  const offset = (firstDay + 6) % 7; // Monday-first offset
+
+  // Set of days that have at least one upcoming (future) event
+  const eventDays = new Set(events.map((e) => new Date(e.start_time).getDate()));
 
   return (
     <div className="grid grid-cols-7 gap-1">
-      {Array.from({ length: offset }).map((_, i) => <div key={`empty-${i}`} />)}
+      {Array.from({ length: offset }).map((_, i) => (
+        <div key={`empty-${i}`} />
+      ))}
       {Array.from({ length: daysInMonth }).map((_, i) => {
         const day = i + 1;
-        const isToday = day === today.getDate();
+        const isToday = isCurrentMonth && day === today.getDate();
         const hasEvent = eventDays.has(day);
+        const isSelected = selectedDay === day;
+
         return (
-          <div
+          <button
             key={day}
-            className={`aspect-square flex items-center justify-center text-xs rounded-lg relative transition-colors cursor-pointer
-              ${isToday ? "bg-primary text-white font-bold shadow-lg shadow-primary/30" : "hover:bg-primary/5 text-foreground/40"}
+            onClick={() => hasEvent && onSelectDay(day)}
+            disabled={!hasEvent}
+            className={`aspect-square flex items-center justify-center text-xs rounded-lg relative transition-all
+              ${isToday
+                ? "bg-primary text-white font-bold shadow-lg shadow-primary/30"
+                : isSelected
+                ? "bg-primary/20 text-primary font-bold ring-2 ring-primary/40"
+                : hasEvent
+                ? "hover:bg-primary/10 text-foreground/70 font-semibold cursor-pointer"
+                : "text-foreground/25 cursor-default"
+              }
             `}
           >
             {day}
-            {hasEvent && !isToday && (
-              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full shadow-sm shadow-primary/50" />
+            {hasEvent && !isToday && !isSelected && (
+              <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full shadow-sm shadow-primary/50" />
             )}
-          </div>
+          </button>
         );
       })}
     </div>
   );
 }
+
+// ── Event Card ────────────────────────────────────────────────────────────────
 
 function EventCard({
   event,
@@ -205,10 +320,14 @@ function EventCard({
 }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isGuest = role === "GUEST" || !isAuthenticated();
+  const isPartnerOnly = event.visibility === "PARTNER_ONLY";
 
   const startTime = new Date(event.start_time);
   const isUpcoming = startTime > new Date();
   const canJoin = !isGuest && isUpcoming && !!event.meeting_link;
+
+  // Guests on partner-only events get a locked view
+  const guestLockedFromEvent = isGuest && isPartnerOnly;
 
   const [calState, setCalState] = useState<"idle" | "form" | "loading" | "success">(
     event.is_rsvped ? "success" : "idle"
@@ -271,8 +390,13 @@ function EventCard({
 
   return (
     <motion.div layout initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.95 }}>
-      <GlassCard className="p-8 group border-foreground/5 hover:border-primary/20 transition-all duration-300">
+      <GlassCard
+        className={`p-8 group border-foreground/5 hover:border-primary/20 transition-all duration-300 ${
+          guestLockedFromEvent ? "opacity-75" : ""
+        }`}
+      >
         <div className="flex flex-col md:flex-row gap-8 items-start">
+          {/* Date Box */}
           <div className="flex flex-col items-center justify-center min-w-[80px] py-4 bg-foreground/5 rounded-2xl border border-foreground/5">
             <span className="text-sm font-black text-primary">{dateStr}</span>
             <span className="text-lg font-bold text-foreground">{timeStr}</span>
@@ -280,7 +404,14 @@ function EventCard({
 
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-bold text-foreground">{event.title}</h3>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-xl font-bold text-foreground">{event.title}</h3>
+                {isPartnerOnly && (
+                  <span className="flex items-center gap-1 text-[10px] font-black text-foreground/40 bg-foreground/5 border border-foreground/10 px-2 py-0.5 rounded-full">
+                    <Lock className="w-2.5 h-2.5" /> Partner
+                  </span>
+                )}
+              </div>
               {role === "ADMIN" && (
                 <button
                   onClick={() => onDelete(event.id)}
@@ -307,9 +438,10 @@ function EventCard({
                 </div>
               )}
 
-              {role === "GUEST" ? (
-                <div className="flex items-center gap-2 text-xs font-bold text-foreground/20 italic">
-                  <Shield className="w-4 h-4" /> Sadece Partnerlere Özel
+              {/* Meeting link / access */}
+              {guestLockedFromEvent ? (
+                <div className="flex items-center gap-2 text-xs font-bold text-foreground/30 italic border border-foreground/10 px-3 py-1.5 rounded-xl bg-foreground/[0.02]">
+                  <Shield className="w-4 h-4" /> Yalnızca Partnerlere Açık — Giriş yaparak katıl
                 </div>
               ) : canJoin ? (
                 <a
@@ -320,20 +452,21 @@ function EventCard({
                 >
                   <LinkIcon className="w-4 h-4" /> Yayına Katıl
                 </a>
-              ) : (
+              ) : !isGuest && !canJoin && !isUpcoming ? (
                 <span className="flex items-center gap-2 text-xs font-bold text-foreground/20 italic cursor-not-allowed">
                   <Clock className="w-4 h-4" /> Yayın Sona Erdi
                 </span>
-              )}
+              ) : null}
 
-              {isUpcoming && (
+              {/* Add to calendar — only for upcoming, non-partner-locked events */}
+              {isUpcoming && !guestLockedFromEvent && (
                 <AnimatePresence mode="wait">
                   {calState === "success" ? (
                     <motion.span
                       key="success"
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center gap-2 text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800"
+                      className="flex items-center gap-2 text-xs font-black text-emerald-600 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20"
                     >
                       <CheckCircle className="w-4 h-4" /> Takvime Eklendi
                     </motion.span>
@@ -347,8 +480,14 @@ function EventCard({
                       className="flex flex-col gap-2 w-full max-w-xs"
                     >
                       <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">Takvimime Ekle</p>
-                        <button type="button" onClick={resetCal} className="text-foreground/30 hover:text-foreground/60 transition-colors">
+                        <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">
+                          Takvimime Ekle
+                        </p>
+                        <button
+                          type="button"
+                          onClick={resetCal}
+                          className="text-foreground/30 hover:text-foreground/60 transition-colors"
+                        >
                           <X className="w-3 h-3" />
                         </button>
                       </div>
@@ -372,12 +511,24 @@ function EventCard({
                           <AlertCircle className="w-3 h-3" /> {calError}
                         </p>
                       )}
-                      <Button type="submit" disabled={isSubmitting} className="rounded-xl h-8 text-xs font-black gap-2 bg-primary/90 hover:bg-primary">
-                        {isSubmitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <><CalendarPlus className="w-3 h-3" /> Daveti Gönder</>}
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="rounded-xl h-8 text-xs font-black gap-2 bg-primary/90 hover:bg-primary"
+                      >
+                        {isSubmitting ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <>
+                            <CalendarPlus className="w-3 h-3" /> Daveti Gönder
+                          </>
+                        )}
                       </Button>
                       <p className="text-[9px] text-foreground/30 text-center">
                         E-postanız yalnızca bu davet için kullanılır.{" "}
-                        <Link href="/legal/kvkk" className="underline hover:text-primary transition-colors">KVKK</Link>
+                        <Link href="/legal/kvkk" className="underline hover:text-primary transition-colors">
+                          KVKK
+                        </Link>
                       </p>
                     </motion.form>
                   ) : (
@@ -392,7 +543,9 @@ function EventCard({
                       {calState === "loading" ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <><CalendarPlus className="w-4 h-4" /> Takvimime Ekle</>
+                        <>
+                          <CalendarPlus className="w-4 h-4" /> Takvimime Ekle
+                        </>
                       )}
                     </motion.button>
                   )}
@@ -401,7 +554,11 @@ function EventCard({
 
               {event.end_time && (
                 <span className="text-xs text-foreground/30">
-                  Bitiş: {new Date(event.end_time).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                  Bitiş:{" "}
+                  {new Date(event.end_time).toLocaleTimeString("tr-TR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </span>
               )}
             </div>
@@ -411,6 +568,8 @@ function EventCard({
     </motion.div>
   );
 }
+
+// ── Add Event Modal ────────────────────────────────────────────────────────────
 
 function AddEventModal({
   isOpen,
@@ -503,11 +662,13 @@ function AddEventModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 italic pl-1">Kategori *</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 italic pl-1">
+                Kategori *
+              </label>
               <select
                 value={form.category}
                 onChange={(e) => setForm((p) => ({ ...p, category: e.target.value as typeof form.category }))}
-                className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-2.5 outline-none focus:border-primary/50 text-sm transition-all"
+                className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-2.5 outline-none focus:border-primary/50 text-sm transition-all text-foreground"
               >
                 <option value="WEBINAR">Webinar</option>
                 <option value="TRAINING">Eğitim</option>
@@ -516,11 +677,13 @@ function AddEventModal({
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 italic pl-1">Görünürlük</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 italic pl-1">
+                Görünürlük
+              </label>
               <select
                 value={form.visibility}
                 onChange={(e) => setForm((p) => ({ ...p, visibility: e.target.value as typeof form.visibility }))}
-                className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-2.5 outline-none focus:border-primary/50 text-sm transition-all"
+                className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-2.5 outline-none focus:border-primary/50 text-sm transition-all text-foreground"
               >
                 <option value="PARTNER_ONLY">Sadece Partnerler</option>
                 <option value="ALL">Herkese Açık</option>
@@ -568,16 +731,18 @@ function AddEventModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 italic pl-1">Açıklama</label>
+            <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 italic pl-1">
+              Açıklama
+            </label>
             <textarea
               placeholder="Etkinlik detayları..."
               value={form.description}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-3 outline-none focus:border-primary/50 text-sm h-24 resize-none transition-all"
+              className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-3 outline-none focus:border-primary/50 text-sm h-24 resize-none transition-all text-foreground"
             />
           </div>
 
-          <p className="text-xs text-foreground/40 italic bg-amber-50 border border-amber-100 rounded-xl px-4 py-2">
+          <p className="text-xs text-foreground/40 italic bg-amber-500/5 border border-amber-500/10 rounded-xl px-4 py-2">
             💡 Etkinlik taslak olarak kaydedilir. Admin panelinden yayınlayabilirsiniz.
           </p>
 

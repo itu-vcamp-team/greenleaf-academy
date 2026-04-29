@@ -42,27 +42,35 @@ class EventRepository(AsyncBaseRepository[Event]):
         self,
         year: int,
         month: int,
-        user_role: UserRole,
+        user_role: UserRole = None,  # kept for API compat; visibility no longer filtered here
     ) -> List[Event]:
-        """Fetches events for a specific month (for calendar grid)."""
-        import calendar
-        _, last_day = calendar.monthrange(year, month)
+        """Fetches UPCOMING events for a specific month (for calendar grid).
 
-        month_start = datetime(year, month, 1, tzinfo=timezone.utc)
+        Past events are excluded so the calendar never shows stale entries.
+        ALL visibility levels are included regardless of role — meeting links
+        are stripped for guests via GuestEventResponse in the route handler,
+        and the UI uses the `visibility` field to show a lock indicator.
+        """
+        import calendar as cal_module
+        _, last_day = cal_module.monthrange(year, month)
+
+        now = datetime.now(timezone.utc)
         month_end = datetime(year, month, last_day, 23, 59, 59, tzinfo=timezone.utc)
+
+        # For the current or past months: start from NOW (skip already-passed events).
+        # For future months: start from the beginning of that month.
+        month_start = datetime(year, month, 1, tzinfo=timezone.utc)
+        effective_start = max(month_start, now)
 
         stmt = (
             select(Event)
             .where(
                 Event.is_published == True,
-                Event.start_time >= month_start,
+                Event.start_time >= effective_start,
                 Event.start_time <= month_end,
             )
             .order_by(Event.start_time.asc())
         )
-
-        if user_role == UserRole.GUEST:
-            stmt = stmt.where(Event.visibility == EventVisibility.ALL)
 
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
