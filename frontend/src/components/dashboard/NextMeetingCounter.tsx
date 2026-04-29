@@ -176,7 +176,7 @@ export function NextMeetingCounter() {
       <div className="relative overflow-hidden glass rounded-[2.5rem] p-1 border-primary/20 shadow-2xl shadow-primary/5">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 animate-pulse" />
 
-        <div className="relative z-10 bg-white/40 dark:bg-black/40 rounded-[2.4rem] p-6 md:p-10 flex flex-col lg:flex-row items-center justify-between gap-10">
+        <div className="relative z-10 bg-transparent rounded-[2.4rem] p-6 md:p-10 flex flex-col lg:flex-row items-center justify-between gap-10">
 
           {/* ── Event Info ── */}
           <div className="flex items-center gap-6">
@@ -187,7 +187,7 @@ export function NextMeetingCounter() {
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary mb-2 italic">
                 {isFallback ? "MOMENTUM VISION" : "SIRADAKİ CANLI ETKİNLİK"}
               </p>
-              <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-3">
+              <h2 className="text-2xl md:text-3xl font-black text-foreground tracking-tight leading-none mb-3">
                 {nextEvent.title}
               </h2>
               <div className="flex items-center gap-3 flex-wrap">
@@ -195,7 +195,7 @@ export function NextMeetingCounter() {
                   {nextEvent.category}
                 </span>
                 {!isFallback && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-bold italic">
+                  <span className="text-xs text-foreground/50 font-bold italic">
                     {new Date(nextEvent.start_time).toLocaleString("tr-TR", {
                       weekday: "long",
                       day: "2-digit",
@@ -210,7 +210,7 @@ export function NextMeetingCounter() {
           </div>
 
           {/* ── Countdown (days / hours / minutes — no seconds) ── */}
-          <div className="flex items-center gap-4 md:gap-8 bg-black/5 dark:bg-white/5 px-8 py-5 rounded-[2rem] border border-white/50 dark:border-black/50 shadow-sm flex-shrink-0">
+          <div className="flex items-center gap-4 md:gap-8 bg-foreground/5 px-8 py-5 rounded-[2rem] border border-foreground/10 shadow-sm flex-shrink-0">
             {timeLeft.days > 0 && (
               <>
                 <TimeUnit value={timeLeft.days} label="GÜN" />
@@ -262,13 +262,13 @@ export function NextMeetingCounter() {
                     className="w-full space-y-2"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                      <p className="text-[10px] font-black text-foreground/50 uppercase tracking-widest">
                         Takvimime Ekle
                       </p>
                       <button
                         type="button"
                         onClick={resetCal}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="text-foreground/40 hover:text-foreground/60 transition-colors"
                       >
                         <X size={14} />
                       </button>
@@ -278,7 +278,7 @@ export function NextMeetingCounter() {
                       placeholder="Adınız (isteğe bağlı)"
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white/80 dark:bg-black/40 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-surface/80 text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                     <input
                       type="email"
@@ -286,7 +286,7 @@ export function NextMeetingCounter() {
                       value={guestEmail}
                       onChange={(e) => setGuestEmail(e.target.value)}
                       required
-                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white/80 dark:bg-black/40 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-surface/80 text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                     {calError && (
                       <p className="text-[10px] text-red-500 font-medium flex items-center gap-1">
@@ -307,7 +307,7 @@ export function NextMeetingCounter() {
                         </>
                       )}
                     </Button>
-                    <p className="text-[9px] text-gray-400 text-center leading-tight">
+                    <p className="text-[9px] text-foreground/40 text-center leading-tight">
                       E-postanız yalnızca bu davet için kullanılır.{" "}
                       <Link href="/legal/kvkk" className="underline hover:text-primary transition-colors">
                         KVKK
@@ -326,7 +326,7 @@ export function NextMeetingCounter() {
                     </div>
                     <button
                       onClick={resetCal}
-                      className="text-[10px] text-gray-400 underline hover:text-primary"
+                      className="text-[10px] text-foreground/40 underline hover:text-primary"
                     >
                       Tekrar dene
                     </button>
@@ -356,10 +356,10 @@ export function NextMeetingCounter() {
             {/* Fallback / no-meeting-link hint for guests */}
             {(isFallback || (!nextEvent.meeting_link && isGuest)) && (
               <div className="text-center px-2">
-                <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 italic">
+                <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-1 italic">
                   {isFallback ? "HAZIR OLUN" : "BİLGİ BEKLENIYOR"}
                 </p>
-                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 leading-tight">
+                <p className="text-[11px] font-bold text-foreground/50 leading-tight">
                   {isFallback
                     ? "Yeni etkinlikler için takipte kalın."
                     : "Yayın linkleri yalnızca partner üyelerine gönderilir."}
@@ -377,10 +377,10 @@ export function NextMeetingCounter() {
 function TimeUnit({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center min-w-[45px]">
-      <span className="text-2xl md:text-4xl font-black text-gray-900 dark:text-white tabular-nums tracking-tighter">
+      <span className="text-2xl md:text-4xl font-black text-foreground tabular-nums tracking-tighter">
         {value.toString().padStart(2, "0")}
       </span>
-      <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
+      <span className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.2em]">
         {label}
       </span>
     </div>
@@ -388,5 +388,5 @@ function TimeUnit({ value, label }: { value: number; label: string }) {
 }
 
 function Divider() {
-  return <div className="w-[1px] h-10 bg-gray-900/10 dark:bg-white/10" />;
+  return <div className="w-[1px] h-10 bg-foreground/10" />;
 }

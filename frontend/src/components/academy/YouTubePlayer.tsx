@@ -4,7 +4,6 @@ import React, { useEffect, useRef } from "react";
 import Plyr from "plyr";
 import "plyr/dist/plyr.css";
 import apiClient from "@/lib/api-client";
-import styles from "./YouTubePlayer.module.css";
 
 interface YouTubePlayerProps {
   videoUrl: string;
@@ -123,24 +122,24 @@ export default function YouTubePlayer({
 
   if (!videoId) {
     return (
-      <div className="flex items-center justify-center w-full h-full bg-gray-100 text-gray-500 rounded-2xl">
+      <div className="flex items-center justify-center w-full h-full bg-surface text-foreground/50 rounded-2xl">
         Geçersiz YouTube Linki
       </div>
     );
   }
 
   return (
-    <div className={styles.playerContainer}>
+    <div className="relative w-full h-full bg-black overflow-hidden select-none">
       {/* Target for Plyr */}
-      <div 
-        ref={videoRef} 
-        data-plyr-provider="youtube" 
-        data-plyr-embed-id={videoId} 
+      <div
+        ref={videoRef}
+        data-plyr-provider="youtube"
+        data-plyr-embed-id={videoId}
       />
       
       {/* Security Overlays */}
-      <div className={styles.overlayTop} />
-      <div className={styles.overlayBottomRight} />
+      <div className="absolute top-0 left-0 w-full h-[60px] z-10 bg-transparent pointer-events-auto" />
+      <div className="absolute bottom-0 right-0 w-[100px] h-[50px] z-10 bg-transparent pointer-events-auto" />
     </div>
   );
 }

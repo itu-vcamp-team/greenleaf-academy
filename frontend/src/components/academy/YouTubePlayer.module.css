@@ -1,34 +1,7 @@
-.playerContainer {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  background: black;
-  overflow: hidden;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.overlayTop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 60px;
-  z-index: 10;
-  background: transparent;
-  pointer-events: auto;
-}
-
-.overlayBottomRight {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 100px;
-  height: 50px;
-  z-index: 10;
-  background: transparent;
-  pointer-events: auto;
-}
+/* Local class rules (.playerContainer, .overlayTop, .overlayBottomRight) have been
+   migrated to inline Tailwind utilities in YouTubePlayer.tsx.
+   This file retains only the :global(.plyr*) overrides which cannot be expressed
+   in Tailwind because Plyr's own stylesheet provides these class names. */
 
 :global(.plyr--full-ui) {
   height: 100% !important;
@@ -44,7 +17,7 @@
   pointer-events: none !important;
 }
 
-/* Allow clicks only when not playing or on specific areas if needed, 
+/* Allow clicks only when not playing or on specific areas if needed,
    but Plyr handles the play/pause button overlay. */
 
 :global(.plyr__controls) {

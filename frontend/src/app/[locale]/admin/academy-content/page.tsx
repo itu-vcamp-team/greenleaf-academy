@@ -161,7 +161,7 @@ export default function AdminAcademyContentPage() {
             <Zap className="w-5 h-5" fill="currentColor" fillOpacity={0.2} />
             <span className="text-xs font-black uppercase tracking-[0.3em]">İçerik Yönetimi</span>
           </div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-black text-foreground tracking-tight">
             Akademi <span className="text-primary italic">İçerikleri</span>
           </h1>
         </div>
@@ -171,15 +171,15 @@ export default function AdminAcademyContentPage() {
       </header>
 
       {/* Tab switcher */}
-      <div className="flex gap-2 p-1.5 bg-gray-100 rounded-2xl w-fit">
+      <div className="flex gap-2 p-1.5 bg-surface rounded-2xl w-fit">
         {(["SHORT", "MASTERCLASS"] as ContentType[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all ${
               activeTab === tab
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-400 hover:text-gray-700"
+                ? "bg-surface text-foreground shadow-sm"
+                : "text-foreground/40 hover:text-foreground/60"
             }`}
           >
             {tab === "SHORT" ? <Zap size={15} /> : <ShieldCheck size={15} />}
@@ -192,11 +192,11 @@ export default function AdminAcademyContentPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array(3).fill(0).map((_, i) => (
-            <div key={i} className="h-40 bg-gray-100 rounded-2xl animate-pulse" />
+            <div key={i} className="h-40 bg-surface rounded-2xl animate-pulse" />
           ))}
         </div>
       ) : contents.length === 0 ? (
-        <div className="text-center py-20 text-gray-400 italic">
+        <div className="text-center py-20 text-foreground/40 italic">
           Henüz içerik eklenmemiş.
         </div>
       ) : (
@@ -209,7 +209,7 @@ export default function AdminAcademyContentPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
               >
-                <GlassCard className="p-5 flex flex-col gap-3 border-gray-100 hover:border-primary/20 transition-colors">
+                <GlassCard className="p-5 flex flex-col gap-3 border-border hover:border-primary/20 transition-colors">
                   {item.thumbnail_url && (
                     <img
                       src={item.thumbnail_url}
@@ -219,12 +219,12 @@ export default function AdminAcademyContentPage() {
                   )}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="font-black text-gray-900 text-sm line-clamp-2">{item.title}</p>
+                      <p className="font-black text-foreground text-sm line-clamp-2">{item.title}</p>
                     </div>
                     <span className={`flex-shrink-0 text-[10px] font-black px-2 py-1 rounded-lg ${
                       item.status === "PUBLISHED"
                         ? "bg-emerald-100 text-emerald-700"
-                        : "bg-gray-100 text-gray-500"
+                        : "bg-surface text-foreground/50"
                     }`}>
                       {item.status === "PUBLISHED" ? "Yayında" : "Taslak"}
                     </span>
@@ -239,11 +239,11 @@ export default function AdminAcademyContentPage() {
                       <ExternalLink size={11} /> Video Linkini Aç
                     </a>
                   )}
-                  <div className="flex gap-2 mt-auto pt-2 border-t border-gray-100">
+                  <div className="flex gap-2 mt-auto pt-2 border-t border-border">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 gap-1 rounded-xl border-gray-200"
+                      className="flex-1 gap-1 rounded-xl border-border"
                       onClick={() => openEdit(item)}
                     >
                       <Pencil size={13} /> Düzenle
@@ -252,7 +252,7 @@ export default function AdminAcademyContentPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="rounded-xl px-2 border-gray-200 disabled:opacity-30"
+                        className="rounded-xl px-2 border-border disabled:opacity-30"
                         onClick={() => handleMove(contents.indexOf(item), "up")}
                         disabled={contents.indexOf(item) === 0}
                       >
@@ -261,7 +261,7 @@ export default function AdminAcademyContentPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="rounded-xl px-2 border-gray-200 disabled:opacity-30"
+                        className="rounded-xl px-2 border-border disabled:opacity-30"
                         onClick={() => handleMove(contents.indexOf(item), "down")}
                         disabled={contents.indexOf(item) === contents.length - 1}
                       >
@@ -303,32 +303,32 @@ export default function AdminAcademyContentPage() {
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
+              className="bg-surface rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
             >
               <div className="p-8">
-                <h2 className="text-2xl font-black text-gray-900 mb-6">
+                <h2 className="text-2xl font-black text-foreground mb-6">
                   {editingId ? "İçeriği Düzenle" : "Yeni İçerik Ekle"}
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2">Tür</label>
+                      <label className="block text-xs font-bold text-foreground/50 mb-2">Tür</label>
                       <select
                         value={form.type}
                         onChange={(e) => setForm({ ...form, type: e.target.value as ContentType })}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        className="w-full px-4 py-2.5 border border-border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 bg-surface text-foreground"
                       >
                         <option value="SHORT">SHORT</option>
                         <option value="MASTERCLASS">MASTERCLASS</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2">Durum</label>
+                      <label className="block text-xs font-bold text-foreground/50 mb-2">Durum</label>
                       <select
                         value={form.status}
                         onChange={(e) => setForm({ ...form, status: e.target.value as ContentStatus })}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        className="w-full px-4 py-2.5 border border-border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 bg-surface text-foreground"
                       >
                         <option value="PUBLISHED">Yayında</option>
                         <option value="DRAFT">Taslak</option>
@@ -337,7 +337,7 @@ export default function AdminAcademyContentPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2">Başlık *</label>
+                    <label className="block text-xs font-bold text-foreground/50 mb-2">Başlık *</label>
                     <Input
                       value={form.title}
                       onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -347,18 +347,18 @@ export default function AdminAcademyContentPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2">Açıklama</label>
+                    <label className="block text-xs font-bold text-foreground/50 mb-2">Açıklama</label>
                     <textarea
                       value={form.description}
                       onChange={(e) => setForm({ ...form, description: e.target.value })}
                       placeholder="Kısa açıklama..."
                       rows={3}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                      className="w-full px-4 py-3 border border-border rounded-xl text-sm placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none bg-surface text-foreground"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2">YouTube URL *</label>
+                    <label className="block text-xs font-bold text-foreground/50 mb-2">YouTube URL *</label>
                     <Input
                       value={form.video_url}
                       onChange={(e) => setForm({ ...form, video_url: e.target.value })}
@@ -369,7 +369,7 @@ export default function AdminAcademyContentPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2">Kaynak Linki</label>
+                      <label className="block text-xs font-bold text-foreground/50 mb-2">Kaynak Linki</label>
                       <Input
                         value={form.resource_link}
                         onChange={(e) => setForm({ ...form, resource_link: e.target.value })}
@@ -377,7 +377,7 @@ export default function AdminAcademyContentPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2">Link Etiketi</label>
+                      <label className="block text-xs font-bold text-foreground/50 mb-2">Link Etiketi</label>
                       <Input
                         value={form.resource_link_label}
                         onChange={(e) => setForm({ ...form, resource_link_label: e.target.value })}
@@ -395,7 +395,7 @@ export default function AdminAcademyContentPage() {
                         onChange={(e) => setForm({ ...form, is_new: e.target.checked })}
                         className="w-4 h-4 accent-primary"
                       />
-                      <label htmlFor="is_new" className="text-sm font-bold text-gray-600 cursor-pointer">
+                      <label htmlFor="is_new" className="text-sm font-bold text-foreground/60 cursor-pointer">
                         Yeni içerik etiketi
                       </label>
                     </div>
@@ -405,7 +405,7 @@ export default function AdminAcademyContentPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      className="flex-1 rounded-2xl border border-gray-200"
+                      className="flex-1 rounded-2xl border border-border"
                       onClick={() => setShowForm(false)}
                     >
                       İptal

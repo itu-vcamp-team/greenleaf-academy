@@ -184,7 +184,7 @@ export default function AdminUsersPage() {
             <Shield className="w-5 h-5" fill="currentColor" fillOpacity={0.2} />
             <span className="text-xs font-black uppercase tracking-[0.3em]">Kullanıcı Yönetimi</span>
           </div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-black text-foreground tracking-tight">
             Partner <span className="text-emerald-500 italic">Yönetimi</span>
           </h1>
         </div>
@@ -199,7 +199,7 @@ export default function AdminUsersPage() {
       </header>
 
       {/* Tab Switcher */}
-      <div className="flex gap-2 p-1.5 bg-gray-100 rounded-2xl w-fit">
+      <div className="flex gap-2 p-1.5 bg-surface rounded-2xl w-fit">
         <TabButton
           active={activeTab === "pending"}
           onClick={() => setActiveTab("pending")}
@@ -218,7 +218,7 @@ export default function AdminUsersPage() {
         <div className="flex gap-4 mb-6 px-2">
           <button 
             onClick={() => fetchAll()} 
-            className="text-xs font-bold text-gray-500 hover:text-primary transition-colors underline underline-offset-4 decoration-gray-200"
+            className="text-xs font-bold text-foreground/50 hover:text-primary transition-colors underline underline-offset-4 decoration-foreground/20"
           >
             Tümünü Göster
           </button>
@@ -237,26 +237,26 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      <GlassCard className="border-gray-100 shadow-sm overflow-hidden">
+      <GlassCard className="border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/60 border-b border-gray-100">
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400">
+              <tr className="bg-surface/60 border-b border-border">
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-foreground/40">
                   Kullanıcı
                 </th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-foreground/40">
                   Rol / Durum
                 </th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-foreground/40">
                   Kayıt Tarihi
                 </th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-foreground/40 text-right">
                   Eylemler
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-border">
               <AnimatePresence mode="popLayout">
                 {loading ? (
                   <tr key="loading">
@@ -267,7 +267,7 @@ export default function AdminUsersPage() {
                 ) : activeTab === "pending" ? (
                   pendingUsers.length === 0 ? (
                     <tr key="empty">
-                      <td colSpan={4} className="px-6 py-20 text-center text-gray-400 font-medium italic">
+                      <td colSpan={4} className="px-6 py-20 text-center text-foreground/40 font-medium italic">
                         Onay bekleyen kullanıcı yok.
                       </td>
                     </tr>
@@ -285,7 +285,7 @@ export default function AdminUsersPage() {
                   )
                 ) : allUsers.length === 0 ? (
                   <tr key="empty">
-                    <td colSpan={4} className="px-6 py-20 text-center text-gray-400 font-medium italic">
+                    <td colSpan={4} className="px-6 py-20 text-center text-foreground/40 font-medium italic">
                       Kullanıcı bulunamadı.
                     </td>
                   </tr>
@@ -322,24 +322,24 @@ export default function AdminUsersPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
+              className="bg-surface rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100">
+              <div className="flex items-center justify-between px-8 py-6 border-b border-border">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
                     <UserPlus className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-black text-gray-900">Kullanıcı Oluştur</h2>
-                    <p className="text-[11px] text-gray-400 font-medium">
+                    <h2 className="text-lg font-black text-foreground">Kullanıcı Oluştur</h2>
+                    <p className="text-[11px] text-foreground/40 font-medium">
                       Yeni Admin veya Partner ekle
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={closeModal}
-                  className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all"
+                  className="p-2 rounded-xl hover:bg-surface text-foreground/40 hover:text-foreground/60 transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -352,8 +352,8 @@ export default function AdminUsersPage() {
                     <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
                       <BadgeCheck className="w-8 h-8 text-emerald-500" />
                     </div>
-                    <h3 className="text-lg font-black text-gray-900 mb-2">Başarılı!</h3>
-                    <p className="text-sm text-gray-500 leading-relaxed mb-6">{createSuccess}</p>
+                    <h3 className="text-lg font-black text-foreground mb-2">Başarılı!</h3>
+                   <p className="text-sm text-foreground/50 leading-relaxed mb-6">{createSuccess}</p>
                     <div className="flex gap-3">
                       <Button
                         onClick={() => setCreateSuccess("")}
@@ -363,7 +363,7 @@ export default function AdminUsersPage() {
                       </Button>
                       <Button
                         onClick={closeModal}
-                        className="flex-1 rounded-2xl bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        className="flex-1 rounded-2xl bg-surface text-foreground/70 hover:bg-foreground/10"
                       >
                         Kapat
                       </Button>
@@ -373,7 +373,7 @@ export default function AdminUsersPage() {
                   <form onSubmit={handleCreateUser} className="space-y-4">
                     {/* Role Select */}
                     <div className="space-y-1">
-                      <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">
+                      <label className="block text-xs font-black uppercase tracking-widest text-foreground/40 mb-1">
                         Rol
                       </label>
                       <div className="flex gap-2">
@@ -385,7 +385,7 @@ export default function AdminUsersPage() {
                             className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${
                               createForm.role === r
                                 ? "bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-100"
-                                : "bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-300"
+                                : "bg-surface text-foreground/40 border-border hover:border-foreground/30"
                             }`}
                           >
                             {r === "ADMIN" ? "🛡 Admin" : "👤 Partner"}
@@ -421,11 +421,11 @@ export default function AdminUsersPage() {
 
                     {/* Phone */}
                     <div className="space-y-1">
-                      <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">
-                        Telefon <span className="text-gray-300 font-normal normal-case tracking-normal">(opsiyonel)</span>
+                      <label className="block text-xs font-black uppercase tracking-widest text-foreground/40 mb-1">
+                        Telefon <span className="text-foreground/20 font-normal normal-case tracking-normal">(opsiyonel)</span>
                       </label>
                       <div className="flex items-stretch">
-                        <span className="flex items-center px-3 bg-gray-100 border border-gray-200 border-r-0 rounded-l-xl text-sm text-gray-500 font-mono select-none">
+                        <span className="flex items-center px-3 bg-surface border border-border border-r-0 rounded-l-xl text-sm text-foreground/50 font-mono select-none">
                           +90
                         </span>
                         <input
@@ -437,14 +437,14 @@ export default function AdminUsersPage() {
                             const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
                             setCreateForm({ ...createForm, phone: digits });
                           }}
-                          className="flex-1 h-12 px-3 bg-gray-50 border border-gray-200 rounded-r-xl text-sm text-gray-800 outline-none focus:border-emerald-400 transition-colors"
+                          className="flex-1 h-12 px-3 bg-surface border border-border rounded-r-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
                         />
                       </div>
                     </div>
 
                     {/* Password with toggle */}
                     <div className="space-y-1">
-                      <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">
+                      <label className="block text-xs font-black uppercase tracking-widest text-foreground/40 mb-1">
                         Geçici Şifre
                       </label>
                       <div className="relative">
@@ -454,17 +454,17 @@ export default function AdminUsersPage() {
                           value={createForm.password}
                           onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                           required
-                          className="w-full h-12 px-4 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 outline-none focus:border-emerald-400 transition-colors"
+                          className="w-full h-12 px-4 pr-10 bg-surface border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground/60"
                         >
                           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
-                      <p className="text-[10px] text-gray-400 italic">
+                      <p className="text-[10px] text-foreground/40 italic">
                         Kullanıcıya e-posta ile gönderilecek. Giriş sonrası değiştirmesi önerilir.
                       </p>
                     </div>
@@ -479,7 +479,7 @@ export default function AdminUsersPage() {
                       <Button
                         type="button"
                         onClick={closeModal}
-                        className="flex-1 rounded-2xl bg-gray-100 text-gray-700 hover:bg-gray-200 h-12"
+                        className="flex-1 rounded-2xl bg-surface text-foreground/70 hover:bg-foreground/10 h-12"
                       >
                         İptal
                       </Button>
@@ -521,7 +521,7 @@ function TabButton({ active, onClick, icon, label }: TabButtonProps) {
     <button
       onClick={onClick}
       className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-black transition-all ${
-        active ? "bg-white text-gray-900 shadow-sm" : "text-gray-400 hover:text-gray-700"
+        active ? "bg-surface text-foreground shadow-sm" : "text-foreground/40 hover:text-foreground/60"
       }`}
     >
       {icon}
@@ -545,20 +545,20 @@ function UserRow({ user, mode, isActing, onApprove, onReject, onToggleActive }: 
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="group hover:bg-gray-50/50 transition-colors"
+      className="group hover:bg-surface/50 transition-colors"
     >
       <td className="px-6 py-5">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-gray-100 rounded-2xl flex items-center justify-center font-black text-gray-500 text-sm group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors flex-shrink-0">
+          <div className="w-10 h-10 bg-surface rounded-2xl flex items-center justify-center font-black text-foreground/50 text-sm group-hover:bg-primary/10 group-hover:text-primary transition-colors flex-shrink-0">
             {user.full_name.charAt(0)}
           </div>
           <div>
-            <p className="font-black text-gray-900 text-sm leading-tight">{user.full_name}</p>
-            <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
+            <p className="font-black text-foreground text-sm leading-tight">{user.full_name}</p>
+            <div className="flex items-center gap-1 text-xs text-foreground/40 mt-0.5">
               <Mail size={11} /> {user.email}
             </div>
             {user.partner_id && (
-              <span className="text-[10px] font-bold text-gray-400">PID: {user.partner_id}</span>
+              <span className="text-[10px] font-bold text-foreground/40">PID: {user.partner_id}</span>
             )}
           </div>
         </div>
@@ -566,7 +566,7 @@ function UserRow({ user, mode, isActing, onApprove, onReject, onToggleActive }: 
 
       <td className="px-6 py-5">
         <div className="flex flex-col gap-1.5">
-          <span className="text-[10px] font-black uppercase text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full w-fit">
+          <span className="text-[10px] font-black uppercase text-foreground/50 bg-surface px-2 py-0.5 rounded-full w-fit">
             {user.role}
           </span>
           {user.is_verified && (
@@ -587,7 +587,7 @@ function UserRow({ user, mode, isActing, onApprove, onReject, onToggleActive }: 
       </td>
 
       <td className="px-6 py-5">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground/40">
           <Calendar size={12} />
           {new Date(user.created_at).toLocaleDateString("tr-TR")}
         </div>

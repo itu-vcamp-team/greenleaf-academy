@@ -357,7 +357,7 @@ function EventCard({
                         placeholder="Adınız (isteğe bağlı)"
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
-                        className="px-3 py-2 text-xs border border-foreground/10 rounded-xl bg-white/80 dark:bg-black/40 placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        className="px-3 py-2 text-xs border border-foreground/10 rounded-xl bg-surface/80 text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                       <input
                         type="email"
@@ -365,7 +365,7 @@ function EventCard({
                         value={guestEmail}
                         onChange={(e) => setGuestEmail(e.target.value)}
                         required
-                        className="px-3 py-2 text-xs border border-foreground/10 rounded-xl bg-white/80 dark:bg-black/40 placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        className="px-3 py-2 text-xs border border-foreground/10 rounded-xl bg-surface/80 text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                       {calError && (
                         <p className="text-[10px] text-red-500 font-medium flex items-center gap-1">

@@ -74,7 +74,7 @@ async def get_my_rank(
     from src.utils.rank_utils import compute_rank, rank_response, PartnerRank
 
     if current_user.role == UserRole.GUEST:
-        return rank_response(PartnerRank.UYE, 0, 0, 0.0)
+        return rank_response(PartnerRank.PARTNER, 0, 0, 0.0)
 
     repo = ProgressRepository(db, current_user.id)
     service = ProgressService(repo)

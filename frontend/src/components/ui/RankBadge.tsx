@@ -3,22 +3,22 @@
 /**
  * RankBadge – Partner rank display component
  *
- * Ranks (Öneri E):
- *  👤 Üye       UYE        0 –  9 %
- *  ⭐ Temsilci  TEMSILCI  10 – 24 %
- *  💼 Danışman  DANISHMAN 25 – 49 %
- *  💎 Elit      ELIT      50 – 74 %
- *  🔥 Efsane    EFSANE    75 – 89 %
- *  💠 Diamond   DIAMOND   90 – 100%
+ * Ranks:
+ *  👤 Partner  PARTNER   0 –  9 %
+ *  ⭐ Uzman    UZMAN    10 – 24 %
+ *  💼 Mentor   MENTOR   25 – 49 %
+ *  💎 Lider    LIDER    50 – 74 %
+ *  🔥 Master   MASTER   75 – 89 %
+ *  💠 Mimar    MIMAR    90 – 100%
  */
 
 export type RankKey =
-  | "UYE"
-  | "TEMSILCI"
-  | "DANISHMAN"
-  | "ELIT"
-  | "EFSANE"
-  | "DIAMOND";
+  | "PARTNER"
+  | "UZMAN"
+  | "MENTOR"
+  | "LIDER"
+  | "MASTER"
+  | "MIMAR";
 
 export interface RankInfo {
   rank: RankKey;
@@ -47,42 +47,42 @@ const RANK_STYLES: Record<
   RankKey,
   { bg: string; border: string; text: string; glow: string; bar: string }
 > = {
-  UYE: {
-    bg: "bg-gray-500/10",
-    border: "border-gray-500/20",
-    text: "text-gray-400",
+  PARTNER: {
+    bg: "bg-foreground/10",
+    border: "border-foreground/20",
+    text: "text-foreground/40",
     glow: "",
-    bar: "bg-gray-400",
+    bar: "bg-foreground/40",
   },
-  TEMSILCI: {
+  UZMAN: {
     bg: "bg-blue-500/10",
     border: "border-blue-500/20",
     text: "text-blue-400",
     glow: "",
     bar: "bg-blue-400",
   },
-  DANISHMAN: {
+  MENTOR: {
     bg: "bg-purple-500/10",
     border: "border-purple-500/20",
     text: "text-purple-400",
     glow: "",
     bar: "bg-purple-400",
   },
-  ELIT: {
+  LIDER: {
     bg: "bg-cyan-500/10",
     border: "border-cyan-500/20",
     text: "text-cyan-400",
     glow: "shadow-cyan-500/20",
     bar: "bg-cyan-400",
   },
-  EFSANE: {
+  MASTER: {
     bg: "bg-orange-500/10",
     border: "border-orange-500/20",
     text: "text-orange-400",
     glow: "shadow-orange-500/20",
     bar: "bg-orange-400",
   },
-  DIAMOND: {
+  MIMAR: {
     bg: "bg-teal-500/10",
     border: "border-teal-500/20",
     text: "text-teal-400",
@@ -102,7 +102,7 @@ export function RankBadge({
   showPoints = false,
   showProgress = false,
 }: RankBadgeProps) {
-  const styles = RANK_STYLES[rank] ?? RANK_STYLES.UYE;
+  const styles = RANK_STYLES[rank] ?? RANK_STYLES.PARTNER;
 
   /* ── Small pill ── */
   if (size === "sm") {

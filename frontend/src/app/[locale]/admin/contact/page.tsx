@@ -126,10 +126,10 @@ export default function AdminContactPage() {
             <Phone className="w-5 h-5" />
             <span className="text-xs font-black uppercase tracking-[0.3em]">İletişim Yönetimi</span>
           </div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-black text-foreground tracking-tight">
             İletişim <span className="text-teal-500 italic">Bilgileri</span>
           </h1>
-          <p className="text-sm text-gray-400 max-w-lg">
+          <p className="text-sm text-foreground/40 max-w-lg">
             Burada eklediğiniz aktif kayıtlar guest ve partner kullanıcıların navbar&apos;ında{" "}
             <strong>İletişim</strong> bölümünde görünür. Hiç aktif kayıt yoksa bölüm gizlenir.
           </p>
@@ -143,20 +143,20 @@ export default function AdminContactPage() {
       </header>
 
       {/* Table */}
-      <GlassCard className="border-gray-100 shadow-sm overflow-hidden">
+      <GlassCard className="border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Sahip / Etiket</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Tür</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Değer</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Sıra</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Durum</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Eylemler</th>
+              <tr className="bg-surface/50 border-b border-border">
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/40">Sahip / Etiket</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/40">Tür</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/40">Değer</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/40">Sıra</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/40">Durum</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/40 text-right">Eylemler</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-8 py-20 text-center">
@@ -165,7 +165,7 @@ export default function AdminContactPage() {
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-8 py-20 text-center text-gray-400 font-medium italic">
+                  <td colSpan={6} className="px-8 py-20 text-center text-foreground/40 font-medium italic">
                     Henüz iletişim kaydı eklenmemiş.
                   </td>
                 </tr>
@@ -173,21 +173,21 @@ export default function AdminContactPage() {
                 data.map((item) => (
                   <tr key={item.id} className="group hover:bg-teal-50/20 transition-colors">
                     <td className="px-8 py-6">
-                      <p className="font-black text-gray-900 text-sm">{item.owner_name}</p>
+                      <p className="font-black text-foreground text-sm">{item.owner_name}</p>
                       {item.label && (
-                        <p className="text-xs text-gray-400 mt-0.5 italic">{item.label}</p>
+                        <p className="text-xs text-foreground/40 mt-0.5 italic">{item.label}</p>
                       )}
                     </td>
                     <td className="px-8 py-6">
-                      <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full bg-gray-50 text-gray-600 text-[10px] font-black uppercase tracking-widest border border-gray-100">
+                      <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full bg-surface text-foreground/60 text-[10px] font-black uppercase tracking-widest border border-border">
                         {TYPE_LABELS[item.type]}
                       </span>
                     </td>
                     <td className="px-8 py-6">
-                      <p className="text-sm text-gray-600 font-medium truncate max-w-xs">{item.value}</p>
+                      <p className="text-sm text-foreground/60 font-medium truncate max-w-xs">{item.value}</p>
                     </td>
                     <td className="px-8 py-6">
-                      <span className="text-sm text-gray-400 font-bold">{item.order}</span>
+                      <span className="text-sm text-foreground/40 font-bold">{item.order}</span>
                     </td>
                     <td className="px-8 py-6">
                       <button onClick={() => handleToggleActive(item.id, item.is_active)}>
@@ -196,7 +196,7 @@ export default function AdminContactPage() {
                             <CheckCircle2 size={12} /> AKTİF
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full bg-gray-50 text-gray-400 text-[10px] font-black uppercase tracking-widest border border-gray-100">
+                          <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full bg-surface text-foreground/40 text-[10px] font-black uppercase tracking-widest border border-border">
                             <XCircle size={12} /> PASİF
                           </span>
                         )}
@@ -229,28 +229,28 @@ export default function AdminContactPage() {
             />
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl p-10 overflow-hidden"
+              className="relative w-full max-w-lg bg-surface rounded-[2.5rem] shadow-2xl p-10 overflow-hidden"
             >
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600">
                   <Phone size={24} />
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 tracking-tight">Yeni İletişim Kaydı</h2>
+                <h2 className="text-2xl font-black text-foreground tracking-tight">Yeni İletişim Kaydı</h2>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Owner Name */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">
+                  <label className="text-[10px] font-black text-foreground/40 uppercase tracking-widest ml-2">
                     Sahip Adı <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
-                    <User className="absolute left-4 top-4 text-gray-300" size={16} />
+                    <User className="absolute left-4 top-4 text-foreground/20" size={16} />
                     <input
                       required
                       value={form.owner_name}
                       onChange={(e) => setForm({ ...form, owner_name: e.target.value })}
-                      className="w-full bg-gray-50 border border-transparent rounded-2xl py-4 pl-11 pr-4 text-sm font-bold outline-none focus:bg-white focus:border-teal-500/20 transition-all"
+                      className="w-full bg-surface border border-transparent rounded-2xl py-4 pl-11 pr-4 text-sm font-bold outline-none focus:border-teal-500/20 transition-all text-foreground"
                       placeholder="Satış Ekibi, Ahmet Bey..."
                     />
                   </div>
@@ -258,15 +258,15 @@ export default function AdminContactPage() {
 
                 {/* Label (optional) */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">
-                    Etiket <span className="text-gray-300">(isteğe bağlı)</span>
+                  <label className="text-[10px] font-black text-foreground/40 uppercase tracking-widest ml-2">
+                    Etiket <span className="text-foreground/20">(isteğe bağlı)</span>
                   </label>
                   <div className="relative">
-                    <Type className="absolute left-4 top-4 text-gray-300" size={16} />
+                    <Type className="absolute left-4 top-4 text-foreground/20" size={16} />
                     <input
                       value={form.label}
                       onChange={(e) => setForm({ ...form, label: e.target.value })}
-                      className="w-full bg-gray-50 border border-transparent rounded-2xl py-4 pl-11 pr-4 text-sm font-bold outline-none focus:bg-white focus:border-teal-500/20 transition-all"
+                      className="w-full bg-surface border border-transparent rounded-2xl py-4 pl-11 pr-4 text-sm font-bold outline-none focus:border-teal-500/20 transition-all text-foreground"
                       placeholder="WhatsApp Destek Hattı, Genel Bilgi..."
                     />
                   </div>
@@ -274,14 +274,14 @@ export default function AdminContactPage() {
 
                 {/* Type */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">
+                  <label className="text-[10px] font-black text-foreground/40 uppercase tracking-widest ml-2">
                     Tür <span className="text-red-400">*</span>
                   </label>
                   <select
                     required
                     value={form.type}
                     onChange={(e) => setForm({ ...form, type: e.target.value as ContactType })}
-                    className="w-full bg-gray-50 border border-transparent rounded-2xl py-4 px-5 text-sm font-bold outline-none focus:bg-white focus:border-teal-500/20 transition-all appearance-none"
+                    className="w-full bg-surface border border-transparent rounded-2xl py-4 px-5 text-sm font-bold outline-none focus:border-teal-500/20 transition-all appearance-none text-foreground"
                   >
                     {CONTACT_TYPES.map((ct) => (
                       <option key={ct.value} value={ct.value}>{ct.label}</option>
@@ -291,16 +291,16 @@ export default function AdminContactPage() {
 
                 {/* Value */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">
+                  <label className="text-[10px] font-black text-foreground/40 uppercase tracking-widest ml-2">
                     Değer <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
-                    <Link2 className="absolute left-4 top-4 text-gray-300" size={16} />
+                    <Link2 className="absolute left-4 top-4 text-foreground/20" size={16} />
                     <input
                       required
                       value={form.value}
                       onChange={(e) => setForm({ ...form, value: e.target.value })}
-                      className="w-full bg-gray-50 border border-transparent rounded-2xl py-4 pl-11 pr-4 text-sm font-bold outline-none focus:bg-white focus:border-teal-500/20 transition-all"
+                      className="w-full bg-surface border border-transparent rounded-2xl py-4 pl-11 pr-4 text-sm font-bold outline-none focus:border-teal-500/20 transition-all text-foreground"
                       placeholder={
                         form.type === "EMAIL" ? "ornek@email.com"
                         : form.type === "PHONE" || form.type === "WHATSAPP" ? "+90 5XX XXX XX XX"
@@ -314,17 +314,17 @@ export default function AdminContactPage() {
 
                 {/* Order */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">
+                  <label className="text-[10px] font-black text-foreground/40 uppercase tracking-widest ml-2">
                     Sıralama
                   </label>
                   <div className="relative">
-                    <AlignLeft className="absolute left-4 top-4 text-gray-300" size={16} />
+                    <AlignLeft className="absolute left-4 top-4 text-foreground/20" size={16} />
                     <input
                       type="number"
                       min={0}
                       value={form.order}
                       onChange={(e) => setForm({ ...form, order: parseInt(e.target.value, 10) || 0 })}
-                      className="w-full bg-gray-50 border border-transparent rounded-2xl py-4 pl-11 pr-4 text-sm font-bold outline-none focus:bg-white focus:border-teal-500/20 transition-all"
+                      className="w-full bg-surface border border-transparent rounded-2xl py-4 pl-11 pr-4 text-sm font-bold outline-none focus:border-teal-500/20 transition-all text-foreground"
                       placeholder="0"
                     />
                   </div>
@@ -335,7 +335,7 @@ export default function AdminContactPage() {
                     type="button"
                     variant="ghost"
                     onClick={() => { setShowModal(false); setForm(EMPTY_FORM); }}
-                    className="flex-1 rounded-2xl py-6 font-bold text-gray-400"
+                    className="flex-1 rounded-2xl py-6 font-bold text-foreground/40"
                   >
                     İptal
                   </Button>

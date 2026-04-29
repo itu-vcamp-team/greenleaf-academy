@@ -48,7 +48,7 @@ export default function AdminDashboardPage({ params }: PageProps) {
             <Zap className="w-5 h-5" fill="currentColor" fillOpacity={0.2} />
             <span className="text-xs font-black uppercase tracking-[0.3em]">Genel Bakış</span>
         </div>
-        <h1 className="text-4xl font-black text-gray-900 tracking-tight">Akademi <span className="text-primary italic">Metrikleri</span></h1>
+        <h1 className="text-4xl font-black text-foreground tracking-tight">Akademi <span className="text-primary italic">Metrikleri</span></h1>
       </header>
 
       {/* Stats Grid */}
@@ -82,7 +82,7 @@ export default function AdminDashboardPage({ params }: PageProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Son Duyurular */}
-        <GlassCard className="p-10 border-gray-100 shadow-sm relative overflow-hidden group">
+        <GlassCard className="p-10 border-border shadow-sm relative overflow-hidden group">
           <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
           <h3 className="text-xl font-black mb-6 flex items-center gap-3">
             <MessageSquare className="text-primary" size={20} /> Son Duyurular
@@ -90,17 +90,17 @@ export default function AdminDashboardPage({ params }: PageProps) {
           <div className="space-y-4">
             {loading ? (
               [1, 2, 3].map(i => (
-                <div key={i} className="h-10 bg-gray-50 rounded-xl animate-pulse" />
+                <div key={i} className="h-10 bg-surface rounded-xl animate-pulse" />
               ))
             ) : announcements.length === 0 ? (
-              <p className="text-gray-400 text-sm italic">Henüz duyuru yok.</p>
+              <p className="text-foreground/40 text-sm italic">Henüz duyuru yok.</p>
             ) : (
               announcements.map(ann => (
-                <div key={ann.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                <div key={ann.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-surface transition-colors">
                   <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-bold text-gray-900 leading-tight">{ann.title}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">
+                    <p className="text-sm font-bold text-foreground leading-tight">{ann.title}</p>
+                    <p className="text-[10px] text-foreground/40 mt-0.5">
                       {new Date(ann.created_at).toLocaleDateString("tr-TR")}
                     </p>
                   </div>
@@ -117,20 +117,20 @@ export default function AdminDashboardPage({ params }: PageProps) {
         </GlassCard>
 
         {/* Hızlı Eylemler */}
-        <GlassCard className="p-10 border-gray-100 shadow-sm bg-white">
-          <h3 className="text-xl font-black mb-6 italic text-gray-900">Hızlı Eylemler</h3>
+        <GlassCard className="p-10 border-border shadow-sm bg-surface">
+          <h3 className="text-xl font-black mb-6 italic text-foreground">Hızlı Eylemler</h3>
           <div className="grid grid-cols-2 gap-4">
-            <Link href={`/${locale}/admin/content`} className="p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-all text-left group">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+            <Link href={`/${locale}/admin/content`} className="p-4 rounded-2xl bg-foreground/5 border border-border hover:bg-foreground/10 transition-all text-left group">
+              <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-1 flex items-center gap-1">
                 <MessageSquare size={10} /> Yeni
               </p>
-              <p className="text-sm font-bold text-gray-900">Duyuru Ekle</p>
+              <p className="text-sm font-bold text-foreground">Duyuru Ekle</p>
             </Link>
-            <Link href={`/${locale}/admin/content`} className="p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-all text-left group">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+            <Link href={`/${locale}/admin/content`} className="p-4 rounded-2xl bg-foreground/5 border border-border hover:bg-foreground/10 transition-all text-left group">
+              <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-1 flex items-center gap-1">
                 <Link2 size={10} /> Yönet
               </p>
-              <p className="text-sm font-bold text-gray-900">Kaynaklar</p>
+              <p className="text-sm font-bold text-foreground">Kaynaklar</p>
             </Link>
             <Link href={`/${locale}/admin/users?action=create`} className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all text-left group">
               <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1 flex items-center gap-1">
@@ -138,11 +138,11 @@ export default function AdminDashboardPage({ params }: PageProps) {
               </p>
               <p className="text-sm font-bold text-emerald-900">Kullanıcı Oluştur</p>
             </Link>
-            <Link href={`/${locale}/admin/users`} className="p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-all text-left group">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+            <Link href={`/${locale}/admin/users`} className="p-4 rounded-2xl bg-foreground/5 border border-border hover:bg-foreground/10 transition-all text-left group">
+              <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-1 flex items-center gap-1">
                 <Users size={10} /> Yönet
               </p>
-              <p className="text-sm font-bold text-gray-900">Kullanıcı Yönetimi</p>
+              <p className="text-sm font-bold text-foreground">Kullanıcı Yönetimi</p>
             </Link>
           </div>
         </GlassCard>
@@ -162,19 +162,19 @@ function StatCard({ icon, label, value, details, color, highlight = false, href 
   return (
     <Link href={href || "#"}>
       <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-        <GlassCard className={`p-8 border-gray-100 hover:border-primary/20 transition-all group relative overflow-hidden cursor-pointer ${highlight ? 'ring-2 ring-primary/20 ring-offset-2' : ''}`}>
+        <GlassCard className={`p-8 border-border hover:border-primary/20 transition-all group relative overflow-hidden cursor-pointer ${highlight ? 'ring-2 ring-primary/20 ring-offset-2' : ''}`}>
           <div className="flex items-center justify-between mb-6">
             <div className={`p-3 rounded-2xl border ${colors[color]}`}>
               {icon}
             </div>
-            <ArrowUpRight size={16} className="text-gray-200 group-hover:text-primary transition-colors" />
+            <ArrowUpRight size={16} className="text-foreground/10 group-hover:text-primary transition-colors" />
           </div>
           <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-            <p className="text-3xl font-black text-gray-900 mb-2">{value}</p>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter opacity-70 italic">{details}</p>
+            <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-1">{label}</p>
+            <p className="text-3xl font-black text-foreground mb-2">{value}</p>
+            <p className="text-[10px] font-bold text-foreground/40 uppercase tracking-tighter opacity-70 italic">{details}</p>
           </div>
-          <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-gray-50 rounded-full opacity-50 group-hover:scale-110 transition-transform" />
+          <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-surface rounded-full opacity-50 group-hover:scale-110 transition-transform" />
         </GlassCard>
       </motion.div>
     </Link>

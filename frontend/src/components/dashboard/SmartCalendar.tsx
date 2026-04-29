@@ -86,13 +86,13 @@ function EventCard({ date, time, title, speaker }: { date: string; time: string;
   return (
     <GlassCard className="flex items-center justify-between group">
       <div className="flex items-center gap-4">
-        <div className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-white/5 border border-white/10 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all duration-500">
-          <span className="text-[10px] font-bold text-white/40 uppercase">{date.split(' ')[1]}</span>
-          <span className="text-lg font-bold text-white leading-none">{date.split(' ')[0]}</span>
+        <div className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-foreground/5 border border-foreground/10 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all duration-500">
+          <span className="text-[10px] font-bold text-foreground/40 uppercase">{date.split(' ')[1]}</span>
+          <span className="text-lg font-bold text-foreground leading-none">{date.split(' ')[0]}</span>
         </div>
         <div>
-          <h4 className="text-sm font-bold text-white/90">{title}</h4>
-          <p className="text-xs text-white/40">{speaker} • {time}</p>
+          <h4 className="text-sm font-bold text-foreground/90">{title}</h4>
+          <p className="text-xs text-foreground/40">{speaker} • {time}</p>
         </div>
       </div>
       <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">

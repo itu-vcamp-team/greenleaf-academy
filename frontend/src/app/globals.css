@@ -2,31 +2,56 @@
 
 @theme {
   --font-sans: var(--font-inter);
+
+  /* Brand colours */
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
   --color-primary-dark: var(--primary-dark);
   --color-secondary: var(--secondary);
+
+  /*
+   * Semantic theme tokens wired to CSS variables so every Tailwind utility
+   * that uses them (bg-background, text-foreground, bg-surface, etc.) picks
+   * up the correct value for the active theme.
+   *
+   * The values below use rgb() with the channel variables defined in :root /
+   * .dark so that Tailwind's opacity modifier syntax (e.g. bg-foreground/10)
+   * works correctly via color-mix in modern browsers.
+   */
+  --color-background: rgb(var(--background));
+  --color-foreground: rgb(var(--foreground));
+  --color-surface:    rgb(var(--surface));
+  --color-border:     rgb(var(--border));
 }
 
+/* ── Light theme (default) ──────────────────────────────────────────────── */
 :root {
   --background: 255 255 255;
   --foreground: 15 23 42;
-  --surface: 243 244 246;
-  --border: 209 213 219;
-  
-  --primary: #10b981;
+  --surface:    243 244 246;
+  --border:     209 213 219;
+
+  --primary:       #10b981;
   --primary-light: #34d399;
-  --primary-dark: #059669;
-  --secondary: #6366f1;
+  --primary-dark:  #059669;
+  --secondary:     #6366f1;
+
+  /* ── Plyr brand-colour override (default blue → brand green) ── */
+  --plyr-color-main: #10b981;
+  --plyr-range-fill-background: #10b981;
+  --plyr-video-progress-buffered-background: rgba(16, 185, 129, 0.25);
+  --plyr-audio-progress-buffered-background: rgba(16, 185, 129, 0.25);
 }
 
+/* ── Dark theme ─────────────────────────────────────────────────────────── */
 .dark {
   --background: 10 10 10;
   --foreground: 255 255 255;
-  --surface: 20 20 20;
-  --border: 30 30 30;
+  --surface:    20 20 20;
+  --border:     30 30 30;
 }
 
+/* ── Base layer ─────────────────────────────────────────────────────────── */
 @layer base {
   body {
     background-color: rgb(var(--background));
@@ -35,33 +60,47 @@
   }
 }
 
+/* ── Component layer ────────────────────────────────────────────────────── */
 @layer components {
+  /* Glass card — light */
   .glass {
     @apply backdrop-blur-xl bg-white/80 border border-black/10 shadow-xl;
   }
-  
+  /* Glass card — dark */
   .dark .glass {
     @apply bg-black/40 border-white/5;
   }
 
+  /* Crystal blur card — light */
   .crystal-blur {
     @apply backdrop-blur-[24px] bg-white/60 border border-black/10 relative overflow-hidden;
   }
-  
+  /* Crystal blur card — dark */
   .dark .crystal-blur {
     @apply bg-black/60 border-white/10;
   }
 
+  /* Gradient text */
   .text-gradient {
     @apply bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent italic;
   }
 }
 
+/* ── Animations ─────────────────────────────────────────────────────────── */
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50%       { transform: translateY(-10px); }
 }
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
 }

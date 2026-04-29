@@ -200,7 +200,7 @@ export default function AdminEventsPage() {
             <Calendar className="w-5 h-5" fill="currentColor" fillOpacity={0.2} />
             <span className="text-xs font-black uppercase tracking-[0.3em]">Etkinlik Yönetimi</span>
           </div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-black text-foreground tracking-tight">
             Akademi <span className="text-orange-500 italic">Etkinlikleri</span>
           </h1>
         </div>
@@ -212,11 +212,11 @@ export default function AdminEventsPage() {
       {loading ? (
         <div className="space-y-4">
           {Array(3).fill(0).map((_, i) => (
-            <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse" />
+            <div key={i} className="h-24 bg-surface rounded-2xl animate-pulse" />
           ))}
         </div>
       ) : events.length === 0 ? (
-        <div className="text-center py-20 text-gray-400 italic">
+        <div className="text-center py-20 text-foreground/40 italic">
           Henüz etkinlik eklenmemiş.
         </div>
       ) : (
@@ -229,15 +229,15 @@ export default function AdminEventsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97 }}
               >
-                <GlassCard className="p-5 border-gray-100 hover:border-primary/20 transition-colors">
+                <GlassCard className="p-5 border-border hover:border-primary/20 transition-colors">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1 min-w-0">
                       <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 flex-shrink-0">
                         {CATEGORY_ICONS[event.category]}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-black text-gray-900 text-sm line-clamp-1">{event.title}</p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="font-black text-foreground text-sm line-clamp-1">{event.title}</p>
+                          <p className="text-xs text-foreground/40 mt-1">
                           {new Date(event.start_time).toLocaleString("tr-TR")}
                           {" · "}
                           <span className="font-bold">{CATEGORY_LABELS[event.category]}</span>
@@ -248,8 +248,8 @@ export default function AdminEventsPage() {
                               <Globe size={9} /> Herkese Açık
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                              <Lock size={9} /> Sadece Partnerler
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-foreground/50 bg-surface px-2 py-0.5 rounded-full">
+                                <Lock size={9} /> Sadece Partnerler
                             </span>
                           )}
                           {event.is_published !== false && (
@@ -334,16 +334,16 @@ export default function AdminEventsPage() {
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
+              className="bg-surface rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
             >
               <div className="p-8">
-                <h2 className="text-2xl font-black text-gray-900 mb-6">
+                <h2 className="text-2xl font-black text-foreground mb-6">
                   {editingId ? "Etkinliği Düzenle" : "Yeni Etkinlik Ekle"}
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2">Başlık *</label>
+                    <label className="block text-xs font-bold text-foreground/50 mb-2">Başlık *</label>
                     <Input
                       value={form.title}
                       onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -359,17 +359,17 @@ export default function AdminEventsPage() {
                       onChange={(e) => setForm({ ...form, description: e.target.value })}
                       placeholder="Etkinlik açıklaması..."
                       rows={3}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                      className="w-full px-4 py-3 border border-border rounded-xl text-sm placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none bg-surface text-foreground"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2">Kategori *</label>
+                      <label className="block text-xs font-bold text-foreground/50 mb-2">Kategori *</label>
                       <select
                         value={form.category}
                         onChange={(e) => setForm({ ...form, category: e.target.value as EventCategory })}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        className="w-full px-4 py-2.5 border border-border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 bg-surface text-foreground"
                         required
                       >
                         <option value="WEBINAR">Webinar</option>
@@ -379,11 +379,11 @@ export default function AdminEventsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2">Görünürlük</label>
+                      <label className="block text-xs font-bold text-foreground/50 mb-2">Görünürlük</label>
                       <select
                         value={form.visibility}
                         onChange={(e) => setForm({ ...form, visibility: e.target.value as EventVisibility })}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        className="w-full px-4 py-2.5 border border-border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 bg-surface text-foreground"
                       >
                         <option value="PARTNER_ONLY">Sadece Partnerler</option>
                         <option value="ALL">Herkese Açık</option>
@@ -393,7 +393,7 @@ export default function AdminEventsPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2">Başlangıç *</label>
+                      <label className="block text-xs font-bold text-foreground/50 mb-2">Başlangıç *</label>
                       <Input
                         type="datetime-local"
                         value={form.start_time}
@@ -402,7 +402,7 @@ export default function AdminEventsPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2">Bitiş</label>
+                      <label className="block text-xs font-bold text-foreground/50 mb-2">Bitiş</label>
                       <Input
                         type="datetime-local"
                         value={form.end_time}
@@ -412,7 +412,7 @@ export default function AdminEventsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2">Meeting Linki</label>
+                    <label className="block text-xs font-bold text-foreground/50 mb-2">Meeting Linki</label>
                     <Input
                       value={form.meeting_link}
                       onChange={(e) => setForm({ ...form, meeting_link: e.target.value })}
@@ -422,7 +422,7 @@ export default function AdminEventsPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2">Konum</label>
+                      <label className="block text-xs font-bold text-foreground/50 mb-2">Konum</label>
                       <Input
                         value={form.location}
                         onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -430,7 +430,7 @@ export default function AdminEventsPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2">İletişim</label>
+                      <label className="block text-xs font-bold text-foreground/50 mb-2">İletişim</label>
                       <Input
                         value={form.contact_info}
                         onChange={(e) => setForm({ ...form, contact_info: e.target.value })}
@@ -443,7 +443,7 @@ export default function AdminEventsPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      className="flex-1 rounded-2xl border border-gray-200"
+                      className="flex-1 rounded-2xl border border-border"
                       onClick={() => setShowForm(false)}
                     >
                       İptal
@@ -479,22 +479,22 @@ export default function AdminEventsPage() {
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
+              className="bg-surface rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
             >
               {/* Header */}
-              <div className="px-8 py-6 border-b border-gray-100 flex items-start justify-between gap-4">
+              <div className="px-8 py-6 border-b border-border flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 text-blue-600 mb-1">
                     <CalendarCheck size={16} />
                     <span className="text-[10px] font-black uppercase tracking-widest">Takvim İstekleri</span>
                   </div>
-                  <h2 className="text-xl font-black text-gray-900 leading-tight line-clamp-2">
+                  <h2 className="text-xl font-black text-foreground leading-tight line-clamp-2">
                     {rsvpModal.title}
                   </h2>
                 </div>
                 <button
                   onClick={() => setRsvpModal(null)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 mt-1"
+                  className="text-foreground/40 hover:text-foreground/60 transition-colors flex-shrink-0 mt-1"
                 >
                   <X size={20} />
                 </button>
@@ -508,33 +508,33 @@ export default function AdminEventsPage() {
                   </div>
                 ) : rsvps.length === 0 ? (
                   <div className="text-center py-12">
-                    <CalendarCheck size={40} className="mx-auto text-gray-200 mb-3" />
-                    <p className="text-gray-400 italic text-sm">Henüz takvim isteği yok.</p>
+                    <CalendarCheck size={40} className="mx-auto text-foreground/10 mb-3" />
+                    <p className="text-foreground/40 italic text-sm">Henüz takvim isteği yok.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
+                    <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-4">
                       Toplam {rsvps.length} kişi takvime ekledi
                     </p>
                     {rsvps.map((rsvp) => (
                       <div
                         key={rsvp.id}
-                        className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50 hover:border-primary/20 transition-colors"
+                        className="flex items-center gap-3 p-3 rounded-xl border border-border bg-surface hover:border-primary/20 transition-colors"
                       >
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${rsvp.is_member ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-500"}`}>
                           {rsvp.is_member ? <UserCheck size={14} /> : <UserX size={14} />}
                         </div>
                         <div className="flex-1 min-w-0">
                           {rsvp.full_name && (
-                            <p className="text-sm font-bold text-gray-800 truncate">{rsvp.full_name}</p>
+                            <p className="text-sm font-bold text-foreground truncate">{rsvp.full_name}</p>
                           )}
-                          <p className="text-xs text-gray-500 truncate">{rsvp.email}</p>
+                          <p className="text-xs text-foreground/50 truncate">{rsvp.email}</p>
                         </div>
                         <div className="flex-shrink-0 text-right">
                           <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${rsvp.is_member ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-600"}`}>
                             {rsvp.is_member ? "Üye" : "Misafir"}
                           </span>
-                          <p className="text-[9px] text-gray-400 mt-1">
+                          <p className="text-[9px] text-foreground/40 mt-1">
                             {new Date(rsvp.created_at).toLocaleDateString("tr-TR")}
                           </p>
                         </div>

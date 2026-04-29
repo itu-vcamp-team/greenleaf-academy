@@ -86,10 +86,10 @@ export default function AdminContentPage() {
               <MessageSquare className="w-5 h-5" fill="currentColor" fillOpacity={0.2} />
               <span className="text-xs font-black uppercase tracking-[0.3em]">İçerik Yönetimi</span>
           </div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">Akademi <span className="text-orange-500 italic">Destek</span></h1>
+          <h1 className="text-4xl font-black text-foreground tracking-tight">Akademi <span className="text-orange-500 italic">Destek</span></h1>
         </div>
 
-        <div className="flex bg-white p-2 rounded-[2rem] border border-gray-100 shadow-sm">
+        <div className="flex bg-surface p-2 rounded-[2rem] border border-border shadow-sm">
            <TabButton 
             active={activeTab === "announcements"} 
             onClick={() => setActiveTab("announcements")}
@@ -112,14 +112,14 @@ export default function AdminContentPage() {
         </Button>
       </div>
 
-      <GlassCard className="border-gray-100 shadow-sm overflow-hidden">
+      <GlassCard className="border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Başlık / Detay</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Durum</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Eylemler</th>
+              <tr className="bg-surface/50 border-b border-border">
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/40">Başlık / Detay</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/40">Durum</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/40 text-right">Eylemler</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -131,7 +131,7 @@ export default function AdminContentPage() {
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-8 py-20 text-center text-gray-400 font-medium italic">
+                  <td colSpan={3} className="px-8 py-20 text-center text-foreground/40 font-medium italic">
                     Kayıt bulunamadı.
                   </td>
                 </tr>
@@ -139,8 +139,8 @@ export default function AdminContentPage() {
                 data.map((item) => (
                   <tr key={item.id} className="group hover:bg-orange-50/30 transition-colors">
                     <td className="px-8 py-6">
-                       <p className="font-black text-gray-900 mb-1">{item.title}</p>
-                       <p className="text-xs text-gray-400 font-medium truncate max-w-md">
+                       <p className="font-black text-foreground mb-1">{item.title}</p>
+                       <p className="text-xs text-foreground/40 font-medium truncate max-w-md">
                          {activeTab === "announcements" ? item.body : item.url}
                        </p>
                     </td>
@@ -184,23 +184,23 @@ export default function AdminContentPage() {
              />
              <motion.div 
                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-               className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl p-10 overflow-hidden"
+               className="relative w-full max-w-lg bg-surface rounded-[2.5rem] shadow-2xl p-10 overflow-hidden"
              >
                 <div className="flex items-center gap-4 mb-8">
                    <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500">
                       {activeTab === "announcements" ? <MessageSquare size={24}/> : <Files size={24}/>}
                    </div>
-                   <h2 className="text-2xl font-black text-gray-900 tracking-tight">Yeni İçerik Ekle</h2>
+                   <h2 className="text-2xl font-black text-foreground tracking-tight">Yeni İçerik Ekle</h2>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Başlık</label>
-                      <div className="relative">
-                         <Type className="absolute left-4 top-4 text-gray-300" size={18} />
-                         <input 
-                           required
-                           className="w-full bg-gray-50 border border-transparent rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none focus:bg-white focus:border-orange-500/20 transition-all font-medium"
+                       <label className="text-[10px] font-black text-foreground/40 uppercase tracking-widest ml-2">Başlık</label>
+                       <div className="relative">
+                          <Type className="absolute left-4 top-4 text-foreground/20" size={18} />
+                          <input
+                            required
+                            className="w-full bg-surface border border-transparent rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none focus:border-orange-500/20 transition-all font-medium text-foreground"
                            placeholder="İçerik başlığı..."
                            onChange={e => setFormData({...formData, title: e.target.value})}
                          />
@@ -209,13 +209,13 @@ export default function AdminContentPage() {
 
                    {activeTab === "announcements" ? (
                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">İçerik Metni</label>
+                        <label className="text-[10px] font-black text-foreground/40 uppercase tracking-widest ml-2">İçerik Metni</label>
                         <div className="relative">
-                           <AlignLeft className="absolute left-4 top-4 text-gray-300" size={18} />
-                           <textarea 
+                           <AlignLeft className="absolute left-4 top-4 text-foreground/20" size={18} />
+                           <textarea
                              required
                              rows={4}
-                             className="w-full bg-gray-50 border border-transparent rounded-2xl py-4 pl-12 pr-4 text-sm font-medium outline-none focus:bg-white focus:border-orange-500/20 transition-all"
+                             className="w-full bg-surface border border-transparent rounded-2xl py-4 pl-12 pr-4 text-sm font-medium outline-none focus:border-orange-500/20 transition-all text-foreground"
                              placeholder="Duyuru detayları..."
                              onChange={e => setFormData({...formData, body: e.target.value})}
                            />
@@ -223,12 +223,12 @@ export default function AdminContentPage() {
                      </div>
                    ) : (
                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">URL / Link</label>
+                        <label className="text-[10px] font-black text-foreground/40 uppercase tracking-widest ml-2">URL / Link</label>
                         <div className="relative">
-                           <Link2 className="absolute left-4 top-4 text-gray-300" size={18} />
-                           <input 
+                           <Link2 className="absolute left-4 top-4 text-foreground/20" size={18} />
+                           <input
                              required
-                             className="w-full bg-gray-50 border border-transparent rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none focus:bg-white focus:border-orange-500/20 transition-all font-medium"
+                             className="w-full bg-surface border border-transparent rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none focus:border-orange-500/20 transition-all font-medium text-foreground"
                              placeholder="https://..."
                              onChange={e => setFormData({...formData, url: e.target.value})}
                            />
@@ -237,8 +237,8 @@ export default function AdminContentPage() {
                    )}
 
                    <div className="pt-4 flex gap-4">
-                      <Button type="button" variant="ghost" onClick={() => setShowModal(false)} className="flex-1 rounded-2xl py-6 font-bold text-gray-400">İptal</Button>
-                      <Button disabled={saving} className="flex-2 rounded-2xl py-6 px-12 bg-gray-900 text-white font-black uppercase tracking-widest gap-2">
+                      <Button type="button" variant="ghost" onClick={() => setShowModal(false)} className="flex-1 rounded-2xl py-6 font-bold text-foreground/40">İptal</Button>
+                      <Button disabled={saving} className="flex-2 rounded-2xl py-6 px-12 bg-foreground text-background font-black uppercase tracking-widest gap-2">
                          {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                          Kaydet
                       </Button>
@@ -257,9 +257,9 @@ function TabButton({ active, label, onClick }: any) {
     <button 
       onClick={onClick}
       className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${
-        active 
-          ? "bg-gray-900 text-white shadow-xl shadow-black/10" 
-          : "text-gray-400 hover:text-gray-900"
+        active
+          ? "bg-foreground text-background shadow-xl shadow-foreground/10"
+          : "text-foreground/40 hover:text-foreground"
       }`}
     >
       {label}
