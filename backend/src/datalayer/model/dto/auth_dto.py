@@ -139,13 +139,11 @@ class ProfileUpdateSchema(BaseModel):
 
 
 class PasswordChangeRequestSchema(BaseModel):
-    """Initial request to change password, triggers OTP."""
+    """
+    Initial request to change password.
+    Accepts current + new passwords upfront; OTP is sent after validation.
+    """
     current_password: str
-
-
-class PasswordChangeVerifySchema(BaseModel):
-    """Finalizing password change with OTP."""
-    otp_code: str
     new_password: str
     confirm_new_password: str
 
@@ -159,13 +157,28 @@ class PasswordChangeVerifySchema(BaseModel):
         if not re.search(r"[0-9]", v):
             raise ValueError("Şifre en az bir rakam içermelidir.")
         return v
-    
+
     @field_validator("confirm_new_password")
     @classmethod
     def passwords_match(cls, v: str, info) -> str:
         if "new_password" in info.data and v != info.data["new_password"]:
             raise ValueError("Yeni şifreler birbiriyle eşleşmiyor.")
         return v
+
+
+class PasswordChangeVerifySchema(BaseModel):
+    """Finalizing password change — only the OTP code is needed here."""
+    otp_code: str
+
+
+class EmailChangeRequestSchema(BaseModel):
+    """Request to change the account e-mail address; triggers OTP to the new address."""
+    new_email: EmailStr
+
+
+class EmailChangeVerifySchema(BaseModel):
+    """Verify OTP sent to new e-mail to confirm address change."""
+    otp_code: str
 
 
 class ResetPasswordSchema(BaseModel):

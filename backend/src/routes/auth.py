@@ -16,6 +16,7 @@ from src.datalayer.model.dto.auth_dto import (
     LoginSchema, LoginResponseSchema, TokenResponseSchema,
     Verify2FASchema, ResetPasswordSchema, ProfileUpdateSchema,
     RefreshTokenSchema, PasswordChangeRequestSchema, PasswordChangeVerifySchema,
+    EmailChangeRequestSchema, EmailChangeVerifySchema,
     ForgotPasswordSchema
 )
 from src.services import (
@@ -579,15 +580,23 @@ async def upload_avatar(
 @router.post("/profile/password-reset/request")
 async def request_password_change(
     data: PasswordChangeRequestSchema,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
 ):
     """
-    Triggers a secure password change by sending an OTP to the user's email.
-    Current password must be verified first.
+    Step 1 of secure password change:
+    - Verifies the current password.
+    - Validates new password strength and match (both new fields are in the request).
+    - Stores the hashed new password temporarily in Redis.
+    - Sends an OTP to the user's current e-mail for confirmation.
     """
     if not PasswordService.verify_password(data.current_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail="Mevcut şifreniz hatalı.")
+
+    # Persist hashed new password in Redis (15 min TTL) so it can be applied after OTP
+    new_password_hash = PasswordService.hash_password(data.new_password)
+    r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+    await r.setex(f"pwd_change_data:{current_user.id}", 900, new_password_hash)
+    await r.aclose()
 
     otp = await OTPService.generate_otp(f"pwd_change:{current_user.id}", purpose="password_change")
 
@@ -597,6 +606,10 @@ async def request_password_change(
         full_name=current_user.full_name,
     )
     if not sent:
+        # Clean up stored hash so the user must restart the flow
+        r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        await r.delete(f"pwd_change_data:{current_user.id}")
+        await r.aclose()
         raise HTTPException(status_code=503, detail="Doğrulama e-postası gönderilemedi. Lütfen tekrar deneyin.")
 
     return {"message": "Doğrulama kodu e-postanıza gönderildi."}
@@ -609,20 +622,117 @@ async def verify_password_change(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Verifies OTP and updates the password.
-    Logs out the user from ALL devices for security.
+    Step 2 of secure password change:
+    - Verifies OTP.
+    - Retrieves and applies the previously stored new password hash.
+    - Logs out the user from ALL devices for security.
     """
     if not await OTPService.verify_otp(f"pwd_change:{current_user.id}", data.otp_code, purpose="password_change"):
         raise HTTPException(status_code=400, detail="Geçersiz veya süresi dolmuş doğrulama kodu.")
 
-    # 1. Update Password
-    current_user.password_hash = PasswordService.hash_password(data.new_password)
-    
-    # 2. Deactivate ALL sessions for this user (Global Logout)
+    # Retrieve the stored new-password hash (set during request phase)
+    r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+    new_password_hash = await r.get(f"pwd_change_data:{current_user.id}")
+    await r.delete(f"pwd_change_data:{current_user.id}")
+    await r.aclose()
+
+    if not new_password_hash:
+        raise HTTPException(
+            status_code=400,
+            detail="Şifre değiştirme oturumu sona erdi. Lütfen işlemi baştan başlatın."
+        )
+
+    # Apply new password and logout all sessions
+    current_user.password_hash = new_password_hash
     await SessionService.deactivate_all_user_sessions(db, current_user.id)
-    
     await db.commit()
+
     return {"message": "Şifreniz başarıyla güncellendi. Güvenliğiniz için tüm oturumlar sonlandırıldı. Lütfen tekrar giriş yapın."}
+
+
+# --- EMAIL CHANGE FLOW ---
+
+@router.post("/profile/email-change/request")
+async def request_email_change(
+    data: EmailChangeRequestSchema,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Step 1 of e-mail change:
+    - Validates the new address is different and not already taken.
+    - Stores the pending new address in Redis.
+    - Sends an OTP to the NEW e-mail address for ownership verification.
+    """
+    if data.new_email.lower() == current_user.email.lower():
+        raise HTTPException(status_code=400, detail="Yeni e-posta adresi mevcut e-posta adresinizle aynı olamaz.")
+
+    stmt = select(User).where(User.email == data.new_email)
+    res = await db.execute(stmt)
+    if res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Bu e-posta adresi zaten kullanımda.")
+
+    # Persist the intended new email in Redis (15 min TTL)
+    r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+    await r.setex(f"email_change_data:{current_user.id}", 900, data.new_email)
+    await r.aclose()
+
+    otp = await OTPService.generate_otp(f"email_change:{current_user.id}", purpose="email_change")
+
+    sent = await MailingService.send_email_change_otp_email(
+        to_email=data.new_email,
+        code=otp,
+        full_name=current_user.full_name,
+    )
+    if not sent:
+        r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        await r.delete(f"email_change_data:{current_user.id}")
+        await r.aclose()
+        raise HTTPException(status_code=503, detail="Doğrulama e-postası gönderilemedi. Lütfen tekrar deneyin.")
+
+    return {
+        "message": "Doğrulama kodu yeni e-posta adresinize gönderildi.",
+        "masked_email": mask_email(data.new_email),
+    }
+
+
+@router.post("/profile/email-change/verify")
+async def verify_email_change(
+    data: EmailChangeVerifySchema,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Step 2 of e-mail change:
+    - Verifies OTP sent to the new address.
+    - Updates the user's email.
+    - Logs out the user from ALL devices for security.
+    """
+    if not await OTPService.verify_otp(f"email_change:{current_user.id}", data.otp_code, purpose="email_change"):
+        raise HTTPException(status_code=400, detail="Geçersiz veya süresi dolmuş doğrulama kodu.")
+
+    r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+    new_email = await r.get(f"email_change_data:{current_user.id}")
+    await r.delete(f"email_change_data:{current_user.id}")
+    await r.aclose()
+
+    if not new_email:
+        raise HTTPException(
+            status_code=400,
+            detail="E-posta değiştirme oturumu sona erdi. Lütfen işlemi baştan başlatın."
+        )
+
+    # Race-condition guard: re-check the address hasn't been taken in the meantime
+    stmt = select(User).where(User.email == new_email)
+    res = await db.execute(stmt)
+    if res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Bu e-posta adresi artık kullanımda.")
+
+    current_user.email = new_email
+    await SessionService.deactivate_all_user_sessions(db, current_user.id)
+    await db.commit()
+
+    return {"message": "E-posta adresiniz başarıyla güncellendi. Güvenliğiniz için tüm oturumlar sonlandırıldı. Lütfen tekrar giriş yapın."}
 
 
 # --- LOGOUT ---

@@ -387,6 +387,31 @@ class MailingService:
         return success
 
     @staticmethod
+    async def send_email_change_otp_email(to_email: str, code: str, full_name: str) -> bool:
+        """Sends an OTP to the NEW e-mail address to confirm an e-mail change request."""
+        html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #4AA435;">Greenleaf Akademi – E-posta Adresi Değiştirme</h2>
+          <p>Merhaba <strong>{full_name}</strong>,</p>
+          <p>Greenleaf Akademi hesabınızda bu e-posta adresini kullanmak için bir talepte bulunuldu.
+             Değişikliği onaylamak için aşağıdaki 6 haneli kodu girin:</p>
+          <div style="background: #f0f9f4; border: 2px solid #4AA435; border-radius: 8px;
+                      padding: 20px; text-align: center; margin: 20px 0;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px;
+                         color: #4AA435;">{code}</span>
+          </div>
+          <p style="color: #666;">Bu kod <strong>15 dakika</strong> geçerlidir.</p>
+          <p style="color: #999; font-size: 12px;">
+            Bu işlemi siz başlatmadıysanız lütfen bu e-postayı dikkate almayın.
+          </p>
+          <div style="background: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #999; margin-top: 20px;">
+            © 2026 Greenleaf Akademi. Tüm hakları saklıdır.
+          </div>
+        </div>
+        """
+        return await MailingService._send_email(to_email, "E-posta Değiştirme Doğrulama Kodunuz", html)
+
+    @staticmethod
     async def send_waitlist_notification_to_admin(
         admin_emails: list[str],
         applicant_name: str,
