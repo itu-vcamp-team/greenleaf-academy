@@ -67,7 +67,7 @@ export default function Home({ params }: PageProps) {
       </div>
 
       <div className="pt-32 px-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1600px] mx-auto">
 
           {/* ── Next Event Counter — shared component ── */}
           <NextMeetingCounter />
@@ -77,7 +77,7 @@ export default function Home({ params }: PageProps) {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-8"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black uppercase tracking-[0.2em] mb-8"
             >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
@@ -254,7 +254,7 @@ function PerkCard({ icon, title, desc }: { icon: React.ReactNode; title: string;
 function RoadmapStep({ number, label, desc }: { number: string; label: string; desc: string }) {
   return (
     <div className="space-y-4">
-      <div className="text-4xl font-black text-primary/20 dark:text-primary/10 tracking-widest">{number}</div>
+      <div className="text-5xl font-black text-primary tracking-widest">{number}</div>
       <div className="space-y-1">
         <div className="text-sm font-black uppercase tracking-widest text-foreground">{label}</div>
         <div className="text-xs text-foreground/40 leading-relaxed italic">{desc}</div>

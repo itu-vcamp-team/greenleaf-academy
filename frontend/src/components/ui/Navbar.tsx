@@ -2,16 +2,16 @@
 
 import { BrandLogo } from "./BrandLogo";
 import { Button } from "./Button";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link, useRouter, usePathname as useI18nPathname } from "@/i18n/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserRole } from "@/context/UserRoleContext";
 import { useAuthStore } from "@/store/auth.store";
 import { useThemeStore } from "@/store/theme.store";
 import {
   Sun, Moon, Calendar, LayoutDashboard, User, LogOut, Menu, X,
-  Mail, Phone, Globe, Link2, MessageSquare, Play,
+  Mail, Phone, Globe, Link2, MessageSquare, Play, ShieldCheck,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import apiClient from "@/lib/api-client";
@@ -64,6 +64,11 @@ export function Navbar() {
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const router = useRouter();
   const pathname = usePathname();
+  const locale = useLocale();
+  const i18nPathname = useI18nPathname();
+  const otherLocale = locale === "tr-TR" ? "en-US" : "tr-TR";
+  const localeLabel = locale === "tr-TR" ? "TR" : "EN";
+  const switchLocale = () => router.replace(i18nPathname, { locale: otherLocale });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Contact info state (Task 5)
@@ -116,7 +121,7 @@ export function Navbar() {
         animate={{ y: 0, opacity: 1 }}
         className="fixed top-0 inset-x-0 z-[70] p-4 pointer-events-none"
       >
-        <div className="max-w-7xl mx-auto glass rounded-full px-4 md:px-8 py-2.5 flex items-center justify-between pointer-events-auto border-white/10 shadow-2xl shadow-black/5">
+        <div className="max-w-[1600px] mx-auto glass rounded-full px-4 md:px-8 py-2.5 flex items-center justify-between pointer-events-auto border-white/10 shadow-2xl shadow-black/5">
           <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="shrink-0">
             <BrandLogo />
           </Link>
@@ -189,13 +194,28 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Right side: theme toggle + auth buttons */}
+          {/* Right side: admin panel + theme toggle + lang switcher + auth buttons */}
           <div className="flex items-center gap-2 md:gap-4 shrink-0">
+            {(role === "ADMIN" || role === "EDITOR") && (
+              <div className="hidden md:block">
+                <Link href="/admin">
+                  <Button size="sm" variant="outline" className="rounded-full px-4 gap-2 border-primary/30 text-primary hover:bg-primary/5">
+                    <ShieldCheck className="w-4 h-4" /> Admin Panel
+                  </Button>
+                </Link>
+              </div>
+            )}
             <button
               onClick={toggleTheme}
               className="p-2.5 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/60 transition-all active:scale-95"
             >
               {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={switchLocale}
+              className="p-2.5 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/60 transition-all active:scale-95 text-xs font-black tracking-widest"
+            >
+              {localeLabel}
             </button>
 
             <div className="hidden md:flex items-center gap-2">
@@ -248,6 +268,18 @@ export function Navbar() {
             className="fixed inset-4 z-[60] glass rounded-[2.5rem] md:hidden flex flex-col p-8 pt-24 shadow-2xl overflow-y-auto"
           >
             <div className="flex flex-col gap-4">
+              {(role === "ADMIN" || role === "EDITOR") && (
+                <Link
+                  href="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-2xl font-bold tracking-tight text-primary transition-colors flex items-center gap-5 p-4 rounded-3xl bg-primary/5 group"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary transition-all">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  Admin Panel
+                </Link>
+              )}
               {navLinks.map((link) => (
                 <Link
                   key={`${link.href}-${link.label}`}
@@ -311,6 +343,21 @@ export function Navbar() {
             </div>
 
             <div className="mt-auto space-y-4 pt-6">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleTheme}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/60 transition-all active:scale-95 text-xs font-black"
+                >
+                  {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                  {theme === "light" ? "Koyu" : "Açık"}
+                </button>
+                <button
+                  onClick={switchLocale}
+                  className="flex-1 flex items-center justify-center py-3 rounded-2xl bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/60 transition-all active:scale-95 text-xs font-black tracking-widest"
+                >
+                  {localeLabel}
+                </button>
+              </div>
               {isGuest ? (
                 <div className="grid grid-cols-2 gap-4">
                   <Link href="/auth/login" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>

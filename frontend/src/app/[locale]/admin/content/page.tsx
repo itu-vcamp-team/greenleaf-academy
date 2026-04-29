@@ -11,12 +11,26 @@ import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
 
+interface ContentItem {
+  id: string;
+  title: string;
+  body?: string;
+  url?: string;
+  is_active: boolean;
+}
+
+interface ContentFormData {
+  title?: string;
+  body?: string;
+  url?: string;
+}
+
 export default function AdminContentPage() {
   const [activeTab, setActiveTab] = useState<"announcements" | "resources">("announcements");
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<ContentFormData>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -252,7 +266,13 @@ export default function AdminContentPage() {
   );
 }
 
-function TabButton({ active, label, onClick }: any) {
+interface TabButtonProps {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}
+
+function TabButton({ active, label, onClick }: TabButtonProps) {
   return (
     <button 
       onClick={onClick}

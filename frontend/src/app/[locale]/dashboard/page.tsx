@@ -122,7 +122,7 @@ export default function DashboardPage({ params }: PageProps) {
     <div className="min-h-screen bg-background pb-20">
       <Navbar />
       
-      <main className="max-w-7xl mx-auto pt-32 px-6">
+      <main className="max-w-[1600px] mx-auto pt-32 px-6">
         {/* Next Meeting Countdown */}
         <NextMeetingCounter />
 

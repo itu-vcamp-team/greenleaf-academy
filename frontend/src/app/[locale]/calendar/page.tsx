@@ -66,7 +66,7 @@ export default function CalendarPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="max-w-6xl mx-auto pt-32 px-6 pb-20">
+      <main className="max-w-[1600px] mx-auto pt-32 px-6 pb-20">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
             <div className="flex items-center gap-3 text-primary mb-4">

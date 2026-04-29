@@ -5,9 +5,12 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3, Users, MessageSquare,
   LogOut, ChevronLeft, ShieldCheck,
-  Zap, Calendar, Phone,
+  Zap, Calendar, Phone, Sun, Moon,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLocale } from "next-intl";
+import { useRouter, usePathname as useI18nPathname } from "@/i18n/navigation";
+import { useThemeStore } from "@/store/theme.store";
 
 const menuItems = [
   { icon: BarChart3, label: "Genel Bakış",           href: "/admin",                color: "text-blue-500"    },
@@ -20,6 +23,13 @@ const menuItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const { theme, toggleTheme } = useThemeStore();
+  const locale = useLocale();
+  const router = useRouter();
+  const i18nPathname = useI18nPathname();
+  const otherLocale = locale === "tr-TR" ? "en-US" : "tr-TR";
+  const localeLabel = locale === "tr-TR" ? "TR" : "EN";
+  const switchLocale = () => router.replace(i18nPathname, { locale: otherLocale });
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname.endsWith("/admin");
@@ -80,6 +90,20 @@ export function AdminSidebar() {
 
       {/* Footer */}
       <div className="p-6 mt-auto space-y-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="flex-1 flex items-center justify-center p-2.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/60 transition-all active:scale-95"
+          >
+            {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+          </button>
+          <button
+            onClick={switchLocale}
+            className="flex-1 flex items-center justify-center p-2.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/60 transition-all active:scale-95 text-xs font-black tracking-widest"
+          >
+            {localeLabel}
+          </button>
+        </div>
         <Link
           href="/dashboard"
           className="flex items-center gap-4 px-5 py-3.5 rounded-xl text-xs font-black text-gray-400 dark:text-white/30 hover:text-primary dark:hover:text-primary transition-all uppercase tracking-widest"

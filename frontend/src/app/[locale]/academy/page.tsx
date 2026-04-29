@@ -109,7 +109,7 @@ export default function AcademyPage({ params }: PageProps) {
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
-      <main className="max-w-5xl mx-auto pt-32 px-6 pb-20">
+      <main className="max-w-[1600px] mx-auto pt-32 px-6 pb-20">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
