@@ -147,15 +147,37 @@ export default function AdminUsersPage() {
     }
   };
 
+  // Silent background re-sync without loading flash
+  const silentRefreshPending = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (debouncedSearchTerm) params.append("search", debouncedSearchTerm);
+      params.append("sort_by", sortConfig.key);
+      params.append("sort_dir", sortConfig.direction);
+      params.append("page", String(page));
+      params.append("size", String(size));
+      const res = await apiClient.get(`/admin/users/pending?${params.toString()}`);
+      setPendingData(res.data);
+    } catch { /* silently ignore */ }
+  };
+
   const handleApprove = async (userId: string) => {
     setActionLoading(userId);
+    // Optimistic removal: row disappears immediately without loading flash
+    setPendingData((prev) => ({
+      ...prev,
+      items: prev.items.filter((u) => u.id !== userId),
+      total: Math.max(0, prev.total - 1),
+    }));
     try {
       await apiClient.post(`/admin/users/${userId}/approve`);
-      await fetchPending();
-      if (activeTab === "all") await fetchAll();
+      // Background sync to ensure data accuracy
+      silentRefreshPending();
     } catch (err) {
       console.error("Onaylama hatası:", err);
       alert("Kullanıcı onaylanırken bir hata oluştu.");
+      // Restore correct state on error
+      fetchPending();
     } finally {
       setActionLoading(null);
     }
@@ -164,13 +186,19 @@ export default function AdminUsersPage() {
   const handleReject = async (userId: string) => {
     if (!confirm("Bu kullanıcıyı reddetmek istediğinize emin misiniz?")) return;
     setActionLoading(userId);
+    // Optimistic removal
+    setPendingData((prev) => ({
+      ...prev,
+      items: prev.items.filter((u) => u.id !== userId),
+      total: Math.max(0, prev.total - 1),
+    }));
     try {
       await apiClient.post(`/admin/users/${userId}/reject`);
-      await fetchPending();
-      if (activeTab === "all") await fetchAll();
+      silentRefreshPending();
     } catch (err) {
       console.error("Reddetme hatası:", err);
       alert("Kullanıcı reddedilirken bir hata oluştu.");
+      fetchPending();
     } finally {
       setActionLoading(null);
     }
@@ -311,12 +339,10 @@ export default function AdminUsersPage() {
                   currentSort={sortConfig}
                   onSort={handleSort}
                 />
-                <SortableHeader
-                  label="Rol / Durum"
-                  sortKey="role"
-                  currentSort={sortConfig}
-                  onSort={handleSort}
-                />
+                {/* Task 2: Rol/Durum column is non-sortable */}
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-foreground/40">
+                  Rol / Durum
+                </th>
                 <SortableHeader
                   label="Kayıt Tarihi"
                   sortKey="created_at"

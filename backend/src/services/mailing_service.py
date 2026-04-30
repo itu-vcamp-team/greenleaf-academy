@@ -502,9 +502,84 @@ class MailingService:
         is_approved: bool,
         rejection_reason: str | None = None,
     ) -> bool:
-        """Kullanıcıya hesap durum güncellemesi bildirir."""
-        html = f"<div>Hesap durumunuz güncellendi. Onay: {is_approved}</div>"
-        return await MailingService._send_email(to_email, "Hesap Durumu", html)
+        """Kullanıcıya hesap onay veya red bildirimi gönderir."""
+        if is_approved:
+            subject = "Greenleaf Akademi – Başvurunuz Onaylandı 🎉"
+            html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;
+                    border: 1px solid #4AA435; border-radius: 12px; overflow: hidden;">
+          <div style="background: #4AA435; color: white; padding: 30px; text-align: center;">
+            <h1 style="margin: 0; font-size: 22px;">🌿 Greenleaf Akademi</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 14px;">Başvuru Sonucu</p>
+          </div>
+          <div style="padding: 28px;">
+            <p style="font-size: 16px;">Merhaba <strong>{full_name}</strong>,</p>
+            <p style="font-size: 15px; color: #4AA435; font-weight: bold;">
+              ✅ Partnerlik başvurunuz onaylandı!
+            </p>
+            <p style="font-size: 14px; color: #555; line-height: 1.6;">
+              Artık Greenleaf Akademi platformuna tam erişiminiz var.
+              Tüm eğitimler, canlı etkinlikler ve partner araçlarından yararlanabilirsiniz.
+            </p>
+            <div style="text-align: center; margin-top: 28px;">
+              <a href="{settings.FRONTEND_URL}/dashboard"
+                 style="background: #4AA435; color: white; padding: 14px 32px;
+                        text-decoration: none; border-radius: 8px; font-weight: bold;
+                        font-size: 14px; display: inline-block;">
+                Platforma Giriş Yap
+              </a>
+            </div>
+          </div>
+          <div style="background: #f9f9f9; padding: 15px; text-align: center;
+                      font-size: 12px; color: #999;">
+            © 2026 Greenleaf Akademi. Tüm hakları saklıdır.
+          </div>
+        </div>
+            """
+        else:
+            subject = "Greenleaf Akademi – Başvurunuz Hakkında Bilgi"
+            reason_block = (
+                f'<div style="background:#fff8ec;border:1px solid #f6d08a;border-radius:8px;'
+                f'padding:16px;margin:20px 0;">'
+                f'<p style="margin:0;font-size:14px;color:#666;"><strong>Açıklama:</strong> {rejection_reason}</p>'
+                f'</div>'
+            ) if rejection_reason else ""
+
+            html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;
+                    border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden;">
+          <div style="background: #4AA435; color: white; padding: 30px; text-align: center;">
+            <h1 style="margin: 0; font-size: 22px;">🌿 Greenleaf Akademi</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 14px;">Başvuru Sonucu</p>
+          </div>
+          <div style="padding: 28px;">
+            <p style="font-size: 16px;">Merhaba <strong>{full_name}</strong>,</p>
+            <p style="font-size: 14px; color: #555; line-height: 1.6;">
+              Greenleaf Akademi'ye yaptığınız partnerlik başvurusunu inceledik.
+              Maalesef bu aşamada başvurunuzu
+              <strong style="color: #c0392b;">onaylayamıyoruz</strong>.
+            </p>
+            {reason_block}
+            <p style="font-size: 14px; color: #555; line-height: 1.6;">
+              Bu karar hakkında daha fazla bilgi almak için lütfen bizimle iletişime geçin.
+            </p>
+            <div style="text-align: center; margin-top: 28px;">
+              <a href="{settings.FRONTEND_URL}"
+                 style="background: #4AA435; color: white; padding: 14px 32px;
+                        text-decoration: none; border-radius: 8px; font-weight: bold;
+                        font-size: 14px; display: inline-block;">
+                Greenleaf Akademi'ye Git
+              </a>
+            </div>
+          </div>
+          <div style="background: #f9f9f9; padding: 15px; text-align: center;
+                      font-size: 12px; color: #999;">
+            © 2026 Greenleaf Akademi. Tüm hakları saklıdır.
+          </div>
+        </div>
+            """
+
+        return await MailingService._send_email(to_email, subject, html)
 
     @staticmethod
     async def send_account_created_by_admin_email(

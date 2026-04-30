@@ -1,11 +1,12 @@
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.datalayer.database import get_db_session
 from src.datalayer.repository import UserRepository, ProgressRepository
 from src.services.admin_user_service import AdminUserService
+from src.services.mailing_service import MailingService
 from src.services.progress_service import ProgressService
 from src.utils.auth_deps import get_current_admin, get_current_partner
 from src.datalayer.model.db.user import User, UserRole
@@ -51,27 +52,51 @@ async def get_pending_users(
 @router.post("/{user_id}/approve", dependencies=[Depends(get_current_admin)])
 async def approve_user(
     user_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Kullanıcıyı partner olarak onaylar."""
+    """Kullanıcıyı partner olarak onaylar ve hoş geldin e-postası gönderir."""
     repo = UserRepository(db)
     service = AdminUserService(repo)
     try:
         user = await service.approve_partner(user_id)
+        # Task 3: Send welcome email in background
+        background_tasks.add_task(
+            MailingService.send_welcome_email,
+            to_email=user.email,
+            full_name=user.full_name,
+            partner_id=user.partner_id or "",
+        )
         return {"message": f"{user.full_name} onaylandı.", "partner_id": user.partner_id}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.post("/{user_id}/reject", dependencies=[Depends(get_current_admin)])
 async def reject_user(
     user_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Kullanıcı başvurusu reddeder."""
+    """Kullanıcı başvurusunu reddeder ve bildirim e-postası gönderir."""
     repo = UserRepository(db)
+    # Fetch user BEFORE rejecting so we have name/email for the notification
+    user = await repo.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
+    user_email = user.email
+    user_name = user.full_name
+
     service = AdminUserService(repo)
     try:
         await service.reject_user(user_id)
+        # Task 3: Send rejection notification in background
+        background_tasks.add_task(
+            MailingService.send_account_status_email,
+            to_email=user_email,
+            full_name=user_name,
+            is_approved=False,
+        )
         return {"message": "Kullanıcı reddedildi."}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
