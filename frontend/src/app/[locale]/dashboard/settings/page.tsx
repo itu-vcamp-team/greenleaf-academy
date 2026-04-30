@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import {
   User, Mail, Phone, Camera, Shield, Lock,
   ChevronRight, CheckCircle2, AlertCircle, FileText,
-  LogOut, KeyRound
+  LogOut, KeyRound, Trash2, AlertTriangle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import apiClient from "@/lib/api-client";
@@ -90,6 +90,16 @@ export default function SettingsPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailData, setEmailData] = useState({ new_email: "", otp_code: "" });
   const [emailMasked, setEmailMasked] = useState("");
+
+  // ── delete account ─────────────────────────────────────────────────────────
+  /**
+   * Step 0 – idle (warning shown)
+   * Step 1 – OTP sent → user enters code → account deleted
+   */
+  const [deleteStep, setDeleteStep] = useState(0);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteOtp, setDeleteOtp] = useState("");
+  const [deleteMaskedEmail, setDeleteMaskedEmail] = useState("");
 
   // ── profile submit ──────────────────────────────────────────────────────────
   const handleProfileUpdate = async (e: React.FormEvent) => {
@@ -218,6 +228,45 @@ export default function SettingsPage() {
     setEmailStep(0);
     setEmailData({ new_email: "", otp_code: "" });
     setEmailMasked("");
+  };
+
+  // ── delete: step 0 → 1 (send OTP directly) ──────────────────────────────
+  const sendDeleteOtp = async () => {
+    setDeleteLoading(true);
+    try {
+      const res = await apiClient.post("/auth/profile/delete-account/request");
+      setDeleteMaskedEmail(res.data.masked_email ?? "");
+      setDeleteStep(1);
+      toast.success("Onay kodu e-posta adresinize gönderildi.");
+    } catch (error: unknown) {
+      toast.error(apiError(error) || "Hata oluştu.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  // ── delete: step 1 → finish ──────────────────────────────────────────────
+  const confirmAccountDelete = async () => {
+    if (!deleteOtp) { toast.error("Lütfen doğrulama kodunu girin."); return; }
+    setDeleteLoading(true);
+    try {
+      await apiClient.post("/auth/profile/delete-account/verify", {
+        otp_code: deleteOtp,
+      });
+      toast.success("Hesabınız kalıcı olarak silindi.");
+      logout();
+      router.push("/auth/login");
+    } catch (error: unknown) {
+      toast.error(apiError(error) || "Doğrulama hatası.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const resetDeleteForm = () => {
+    setDeleteStep(0);
+    setDeleteOtp("");
+    setDeleteMaskedEmail("");
   };
 
   if (!user) return null;
@@ -607,6 +656,92 @@ export default function SettingsPage() {
                         {pwdLoading ? "İŞLENİYOR..." : "ŞİFREYİ GÜNCELLE"}
                       </Button>
                       <Button variant="ghost" className="rounded-xl h-12 font-bold" onClick={resetPwdForm}>
+                        İptal
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </GlassCard>
+
+            {/* ── Tehlike Bölgesi – Hesabı Kalıcı Sil ──────────────────── */}
+            <GlassCard className="p-10 border border-red-100 shadow-sm bg-red-50/30">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="p-2 bg-red-500/10 rounded-lg text-red-600">
+                  <Trash2 size={20} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-red-700 tracking-tight">Hesabımı Kalıcı Olarak Kapat</h3>
+                  <p className="text-xs text-red-400 font-medium mt-0.5">Bu işlem geri alınamaz.</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {/* Step 0 – idle */}
+                {deleteStep === 0 && (
+                  <div className="space-y-4">
+                    <div className="bg-red-500/5 rounded-2xl p-5 flex items-start gap-4 border border-red-100">
+                      <AlertTriangle size={20} className="text-red-500 mt-0.5 shrink-0" />
+                      <div className="text-sm text-red-700 space-y-1">
+                        <p className="font-black">Dikkat! Bu işlem kalıcıdır.</p>
+                        <p className="font-medium opacity-80">
+                          Hesabınızı sildiğinizde tüm kişisel bilgileriniz, ilerleme kayıtlarınız ve
+                          platform erişiminiz <strong>kalıcı olarak silinecek</strong> ve bu işlem
+                          geri alınamayacaktır.
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 font-black gap-2"
+                      onClick={sendDeleteOtp}
+                      disabled={deleteLoading}
+                    >
+                      {deleteLoading
+                        ? "GÖNDERİLİYOR..."
+                        : <><Trash2 size={16} /> Hesabımı Kalıcı Olarak Kapat</>
+                      }
+                    </Button>
+                  </div>
+                )}
+
+                {/* Step 1 – enter OTP */}
+                {deleteStep === 1 && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                    <div className="bg-red-500/5 p-4 rounded-xl flex items-start gap-3 text-red-700 border border-red-100">
+                      <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-black">
+                          Onay kodu <strong>{deleteMaskedEmail}</strong> adresine gönderildi.
+                        </p>
+                        <p className="text-[10px] opacity-70 mt-0.5">
+                          Kodu girdikten sonra hesabınız <strong>kalıcı olarak</strong> silinecektir.
+                          Bu işlem geri alınamaz.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="max-w-xs space-y-2">
+                      <label className="text-[10px] font-black text-red-400/70 uppercase tracking-widest pl-1">Onay Kodu</label>
+                      <Input
+                        autoComplete="one-time-code"
+                        placeholder="000000"
+                        maxLength={6}
+                        className="rounded-2xl h-14 bg-white border-red-100 focus:border-red-300 text-center tracking-[0.5em] font-black text-xl"
+                        value={deleteOtp}
+                        onChange={(e) => setDeleteOtp(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Button
+                        className="rounded-xl h-12 bg-red-600 text-white px-8 font-black hover:bg-red-700 gap-2"
+                        onClick={confirmAccountDelete}
+                        disabled={deleteLoading}
+                      >
+                        {deleteLoading ? "SİLİNİYOR..." : <><Trash2 size={15} /> HESABIMI KALİCİ OLARAK SİL</>}
+                      </Button>
+                      <Button variant="ghost" className="rounded-xl h-12 font-bold" onClick={resetDeleteForm}>
                         İptal
                       </Button>
                     </div>

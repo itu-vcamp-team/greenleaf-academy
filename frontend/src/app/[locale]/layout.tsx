@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import { UserRoleProvider } from "@/context/UserRoleContext";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
+import { Footer } from "@/components/layout/Footer";
 
 import { Toaster } from "sonner";
 
@@ -68,11 +69,12 @@ export default async function LocaleLayout(props: {
         */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={`${inter.variable} antialiased selection:bg-primary/30`}>
+      <body className={`${inter.variable} antialiased selection:bg-primary/30 flex flex-col min-h-screen`}>
         <NextIntlClientProvider messages={messages}>
           <UserRoleProvider>
             <Toaster richColors position="top-right" />
-            <main className="min-h-screen bg-background">{children}</main>
+            <main className="flex-1 bg-background">{children}</main>
+            <Footer />
           </UserRoleProvider>
         </NextIntlClientProvider>
       </body>

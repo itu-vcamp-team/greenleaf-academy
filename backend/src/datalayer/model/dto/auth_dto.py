@@ -181,6 +181,13 @@ class EmailChangeVerifySchema(BaseModel):
     otp_code: str
 
 
+# --- ACCOUNT DELETION ---
+
+class AccountDeleteVerifySchema(BaseModel):
+    """Finalises account deletion by verifying the OTP received by e-mail."""
+    otp_code: str
+
+
 class ResetPasswordSchema(BaseModel):
     email: EmailStr
     code: str

@@ -17,7 +17,8 @@ from src.datalayer.model.dto.auth_dto import (
     Verify2FASchema, ResetPasswordSchema, ProfileUpdateSchema,
     RefreshTokenSchema, PasswordChangeRequestSchema, PasswordChangeVerifySchema,
     EmailChangeRequestSchema, EmailChangeVerifySchema,
-    ForgotPasswordSchema
+    ForgotPasswordSchema,
+    AccountDeleteVerifySchema,
 )
 from src.services import (
     OTPService, GreenleafGlobalService, SessionService,
@@ -733,6 +734,121 @@ async def verify_email_change(
     await db.commit()
 
     return {"message": "E-posta adresiniz başarıyla güncellendi. Güvenliğiniz için tüm oturumlar sonlandırıldı. Lütfen tekrar giriş yapın."}
+
+
+# --- ACCOUNT DELETION ---
+
+@router.post("/profile/delete-account/request")
+async def request_account_deletion(
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Step 1 of permanent account deletion:
+    - Sends a 6-digit OTP to the user's e-mail address for confirmation.
+    - ADMIN accounts cannot self-delete.
+    """
+    from src.datalayer.model.db.user import UserRole as _UR
+    if current_user.role == _UR.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Yönetici hesapları self-servis ile silinemez. Lütfen başka bir yönetici ile iletişime geçin.",
+        )
+
+    otp_code = await OTPService.generate_and_store_otp(
+        f"account_delete:{current_user.id}", purpose="account_delete"
+    )
+
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;border:1px solid #e0e0e0;border-radius:12px">
+      <h2 style="color:#1a1a1a">Hesap Silme Onayı</h2>
+      <p style="color:#555">Merhaba <strong>{current_user.full_name}</strong>,</p>
+      <p style="color:#555">
+        Greenleaf Akademi hesabınızı <strong>kalıcı olarak silmek</strong> için bir istek aldık.
+        Bu işlem <u>geri alınamaz</u>; tüm verileriniz, ilerleme kayıtlarınız ve hesap bilgileriniz
+        silinecektir.
+      </p>
+      <p style="color:#555">Onay kodunuz:</p>
+      <div style="font-size:36px;font-weight:bold;letter-spacing:10px;color:#d32f2f;
+                  text-align:center;background:#fff5f5;border:2px solid #ffcdd2;
+                  border-radius:8px;padding:20px 0;margin:24px 0">
+        {otp_code}
+      </div>
+      <p style="color:#888;font-size:13px">
+        Bu kod 10 dakika geçerlidir. Eğer bu işlemi siz başlatmadıysanız bu e-postayı dikkate almayınız;
+        hesabınız güvende olmaya devam edecektir.
+      </p>
+      <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+      <p style="color:#aaa;font-size:11px;text-align:center">Greenleaf Akademi · greenleafakademi.com</p>
+    </div>
+    """
+
+    await MailingService.send_email(
+        to=current_user.email,
+        subject="Greenleaf Akademi – Hesap Silme Onay Kodu",
+        html=html,
+    )
+    return {
+        "message": "Onay kodu e-posta adresinize gönderildi.",
+        "masked_email": mask_email(current_user.email),
+    }
+
+
+@router.post("/profile/delete-account/verify")
+async def verify_account_deletion(
+    data: AccountDeleteVerifySchema,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Step 2 of permanent account deletion:
+    - Verifies the OTP.
+    - Explicitly cleans up every FK reference before deleting the user row.
+    - event_calendar_rsvp.user_id has ondelete=SET NULL — handled by DB.
+    """
+    if not await OTPService.verify_otp(
+        f"account_delete:{current_user.id}", data.otp_code, purpose="account_delete"
+    ):
+        raise HTTPException(status_code=400, detail="Geçersiz veya süresi dolmuş doğrulama kodu.")
+
+    uid = current_user.id
+
+    from sqlalchemy import delete as sa_delete, update as sa_update
+    from src.datalayer.model.db.user_device import UserDevice
+    from src.datalayer.model.db.user_session import UserSession
+    from src.datalayer.model.db.user_progress import UserProgress
+    from src.datalayer.model.db.favorite import Favorite
+    from src.datalayer.model.db.reference_code import ReferenceCode
+    from src.datalayer.model.db.audit_log import AuditLog
+    from src.datalayer.model.db.resource_link import ResourceLink
+    from src.datalayer.model.db.contact_info import ContactInfo
+    from src.datalayer.model.db.announcement import Announcement
+
+    # ── 1. Nullify nullable FK references ──────────────────────────────────
+    # audit_log.actor_id is Optional — safe to NULL
+    await db.execute(sa_update(AuditLog).where(AuditLog.actor_id == uid).values(actor_id=None))
+    # reference_code.used_by is Optional — safe to NULL
+    await db.execute(sa_update(ReferenceCode).where(ReferenceCode.used_by == uid).values(used_by=None))
+    # users.inviter_id is Optional (self-ref) — safe to NULL
+    await db.execute(sa_update(User).where(User.inviter_id == uid).values(inviter_id=None))
+
+    # ── 2. Delete records owned by user (NOT NULL created_by / user_id) ──
+    await db.execute(sa_delete(ReferenceCode).where(ReferenceCode.created_by == uid))
+    await db.execute(sa_delete(Announcement).where(Announcement.created_by == uid))
+    await db.execute(sa_delete(ContactInfo).where(ContactInfo.created_by == uid))
+    await db.execute(sa_delete(ResourceLink).where(ResourceLink.created_by == uid))
+    await db.execute(sa_delete(UserProgress).where(UserProgress.user_id == uid))
+    await db.execute(sa_delete(Favorite).where(Favorite.user_id == uid))
+    await db.execute(sa_delete(UserDevice).where(UserDevice.user_id == uid))
+    await db.execute(sa_delete(UserSession).where(UserSession.user_id == uid))
+
+    # ── 3. Delete the user row ─────────────────────────────────────────────
+    # event_calendar_rsvp.user_id has ondelete=SET NULL — DB handles it automatically.
+    await db.delete(current_user)
+    await db.commit()
+
+    logger.info(f"Account permanently deleted: user_id={uid}")
+    return {"message": "Hesabınız kalıcı olarak silindi."}
 
 
 # --- LOGOUT ---
