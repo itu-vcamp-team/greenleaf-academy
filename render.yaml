@@ -32,12 +32,12 @@ services:
           name: greenleaf-redis
           type: redis
           property: connectionString
-      - key: GMAIL_CLIENT_ID
+      - key: AWS_ACCESS_KEY_ID
         sync: false
-      - key: GMAIL_CLIENT_SECRET
+      - key: AWS_SECRET_ACCESS_KEY
         sync: false
-      - key: GMAIL_REFRESH_TOKEN
-        sync: false
+      - key: AWS_SES_REGION
+        value: eu-north-1
       - key: MAIL_FROM_ADDRESS
         value: noreply@greenleafakademi.com
       - key: MAIL_FROM_NAME
@@ -50,6 +50,36 @@ services:
         value: https://greenleafakademi.com
       - key: TURNSTILE_SECRET_KEY
         sync: false
+
+  # --- ARQ WORKER ---
+  - type: worker
+    name: greenleaf-arq-worker
+    runtime: python
+    branch: main
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: arq src.worker.WorkerSettings
+    plan: starter
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PYTHONPATH
+        value: /opt/render/project/src
+      - key: DATABASE_URL
+        fromDatabase:
+          name: greenleaf-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: greenleaf-redis
+          type: redis
+          property: connectionString
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_SES_REGION
+        value: eu-north-1
 
   # --- FRONTEND (Single-tenant: one deployment per server) ---
   - type: web
