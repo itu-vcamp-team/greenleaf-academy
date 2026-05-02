@@ -61,6 +61,29 @@ services:
         condition: service_healthy
     command: uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload
 
+  # ── ARQ Worker ───────────────────────────────────────────────────────────────
+  arq-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      APP_ENV: development
+      PYTHONPATH: /app
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-greenleaf}:${POSTGRES_PASSWORD:-greenleaf_dev}@postgres:5432/${POSTGRES_DB:-greenleaf_db}
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: arq src.worker.WorkerSettings
+
 # ── Volumes ───────────────────────────────────────────────────────────────────
 volumes:
   postgres_data_local:
