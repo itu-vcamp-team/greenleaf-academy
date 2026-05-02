@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp, Users, Target, Award, ArrowUpRight,
-  Shield, Zap, Lock, ChevronRight, UserPlus, Info, Bell, Megaphone, X,
+  Shield, Zap, Lock, ChevronRight, UserPlus, Info, Bell, Megaphone, X, Search,
 } from "lucide-react";
 
 import { Navbar } from "@/components/ui/Navbar";
@@ -31,11 +32,13 @@ interface ProgressDetail {
 interface ChildUser {
   id: string;
   full_name: string;
-  partner_id: string;
-  role: string;
+  username: string;
+  email: string;
+  phone: string | null;
+  partner_id: string | null;
+  is_active: boolean;
   shorts_percentage: number;
   masterclass_percentage: number;
-  is_active: boolean;
   rank: RankKey;
   rank_label: string;
   rank_emoji: string;
@@ -43,6 +46,8 @@ interface ChildUser {
   earned_points: number;
   max_points: number;
   rank_percentage: number;
+  joined_at: string | null;
+  profile_image_path: string | null;
 }
 
 interface RankData {
@@ -88,8 +93,15 @@ export default function DashboardPage({ params }: PageProps) {
 
   const [children, setChildren] = useState<ChildUser[]>([]);
   const [loadingChildren, setLoadingChildren] = useState(!isGuest);
-  const [selectedChild, setSelectedChild] = useState<{ id: string; name: string } | null>(null);
+  const [selectedChild, setSelectedChild] = useState<ChildUser | null>(null);
   const [childProgress, setChildProgress] = useState<ProgressDetail[]>([]);
+
+  // Adaylarım filter / sort / search
+  const [childSearch, setChildSearch] = useState("");
+  const [childSort, setChildSort] = useState<
+    "joined_desc" | "name_asc" | "name_desc" | "shorts_desc" | "masterclass_desc" | "points_desc"
+  >("joined_desc");
+  const [childFilter, setChildFilter] = useState<"all" | "active" | "pending">("all");
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [resources, setResources] = useState<{ id: string; title: string; url: string }[]>([]);
@@ -138,15 +150,43 @@ export default function DashboardPage({ params }: PageProps) {
     }
   }, [isGuest]);
 
-  const handleChildClick = async (childId: string, childName: string) => {
-    setSelectedChild({ id: childId, name: childName });
+  const handleChildClick = async (child: ChildUser) => {
+    setSelectedChild(child);
+    setChildProgress([]); // clear previous data while loading
     try {
-      const res = await apiClient.get(`/admin/users/child/${childId}/progress`);
+      const res = await apiClient.get(`/admin/users/child/${child.id}/progress`);
       setChildProgress(res.data);
     } catch (err) {
       console.error("Failed to fetch child progress:", err);
     }
   };
+
+  // ── Computed: filtered + sorted children list ──────────────────────────────
+  const filteredChildren = (() => {
+    let result = [...children];
+    if (childFilter === "active") result = result.filter((c) => c.is_active);
+    else if (childFilter === "pending") result = result.filter((c) => !c.is_active);
+    if (childSearch.trim()) {
+      const q = childSearch.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.full_name.toLowerCase().includes(q) ||
+          (c.username ?? "").toLowerCase().includes(q) ||
+          (c.partner_id ?? "").toLowerCase().includes(q)
+      );
+    }
+    switch (childSort) {
+      case "name_asc":        result.sort((a, b) => a.full_name.localeCompare(b.full_name)); break;
+      case "name_desc":       result.sort((a, b) => b.full_name.localeCompare(a.full_name)); break;
+      case "shorts_desc":     result.sort((a, b) => b.shorts_percentage - a.shorts_percentage); break;
+      case "masterclass_desc":result.sort((a, b) => b.masterclass_percentage - a.masterclass_percentage); break;
+      case "points_desc":     result.sort((a, b) => b.earned_points - a.earned_points); break;
+      default: result.sort((a, b) =>
+        new Date(b.joined_at ?? 0).getTime() - new Date(a.joined_at ?? 0).getTime()
+      ); break;
+    }
+    return result;
+  })();
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -235,9 +275,9 @@ export default function DashboardPage({ params }: PageProps) {
               </section>
             )}
 
-            {/* Partners list */}
+            {/* Partners list (Adaylarım) */}
             <section>
-              <div className="flex items-center justify-between mb-4 px-2">
+              <div className="flex items-start justify-between mb-4 px-2 gap-3 flex-wrap">
                 <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40">
                   {t("my_children")}
                 </h3>
@@ -248,6 +288,57 @@ export default function DashboardPage({ params }: PageProps) {
                 )}
               </div>
 
+              {/* Search / Filter / Sort — hidden for guests and when list is empty */}
+              {!isGuest && children.length > 0 && (
+                <div className="mb-4 space-y-3">
+                  {/* Search input */}
+                  <div className="relative">
+                    <Search
+                      size={14}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/30 pointer-events-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="İsim, kullanıcı adı veya ID ara…"
+                      value={childSearch}
+                      onChange={(e) => setChildSearch(e.target.value)}
+                      className="w-full bg-foreground/5 border border-foreground/10 rounded-2xl py-2.5 pl-10 pr-4 text-sm font-medium outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all text-foreground placeholder-foreground/30"
+                    />
+                  </div>
+
+                  {/* Filter tabs + Sort dropdown */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex gap-1 bg-foreground/5 rounded-2xl p-1">
+                      {(["all", "active", "pending"] as const).map((f) => (
+                        <button
+                          key={f}
+                          onClick={() => setChildFilter(f)}
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${
+                            childFilter === f
+                              ? "bg-primary text-white shadow-sm"
+                              : "text-foreground/40 hover:text-foreground/70"
+                          }`}
+                        >
+                          {f === "all" ? `Tümü (${children.length})` : f === "active" ? `Aktif (${children.filter((c) => c.is_active).length})` : `Bekleyen (${children.filter((c) => !c.is_active).length})`}
+                        </button>
+                      ))}
+                    </div>
+                    <select
+                      value={childSort}
+                      onChange={(e) => setChildSort(e.target.value as typeof childSort)}
+                      className="ml-auto bg-foreground/5 border border-foreground/10 rounded-2xl py-2 px-3 text-xs font-black text-foreground/60 outline-none focus:border-primary/30 cursor-pointer"
+                    >
+                      <option value="joined_desc">En Yeni</option>
+                      <option value="name_asc">İsim A→Z</option>
+                      <option value="name_desc">İsim Z→A</option>
+                      <option value="shorts_desc">Shorts %</option>
+                      <option value="masterclass_desc">Masterclass %</option>
+                      <option value="points_desc">Puan</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
               <GlassCard
                 className={`p-6 border-foreground/5 min-h-[300px] flex flex-col ${
                   isGuest ? "blur-sm select-none pointer-events-none opacity-50" : ""
@@ -257,18 +348,30 @@ export default function DashboardPage({ params }: PageProps) {
                   <div className="flex-1 flex items-center justify-center">
                     <Zap className="w-8 h-8 text-primary animate-spin opacity-20" />
                   </div>
-                ) : children.length > 0 ? (
+                ) : filteredChildren.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {children.map((child) => (
+                    {filteredChildren.map((child) => (
                       <div
                         key={child.id}
-                        onClick={() => handleChildClick(child.id, child.full_name)}
+                        onClick={() => handleChildClick(child)}
                         className="group p-4 rounded-2xl border border-foreground/5 bg-foreground/5 hover:border-primary/30 hover:bg-foreground/10 transition-all cursor-pointer relative"
                       >
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-foreground/5 flex items-center justify-center font-black text-foreground/20 border border-foreground/5 group-hover:bg-primary/5 group-hover:text-primary transition-colors uppercase">
-                              {child.full_name.charAt(0)}
+                            {/* Profile photo or initial avatar */}
+                            <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-foreground/5 group-hover:border-primary/20 transition-colors">
+                              {child.profile_image_path ? (
+                                <Image
+                                  src={`/api/backend${child.profile_image_path}`}
+                                  alt={child.full_name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-foreground/5 flex items-center justify-center font-black text-foreground/20 group-hover:bg-primary/5 group-hover:text-primary transition-colors uppercase text-sm">
+                                  {child.full_name.charAt(0)}
+                                </div>
+                              )}
                             </div>
                             <div>
                               <p className="font-bold text-foreground group-hover:text-primary transition-colors">
@@ -313,6 +416,13 @@ export default function DashboardPage({ params }: PageProps) {
                       </div>
                     ))}
                   </div>
+                ) : children.length > 0 && (childSearch || childFilter !== "all") ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
+                    <Search className="w-12 h-12 text-foreground/5 mb-4" />
+                    <p className="text-foreground/30 text-sm font-medium italic max-w-xs">
+                      Eşleşen aday bulunamadı.
+                    </p>
+                  </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
                     <UserPlus className="w-12 h-12 text-foreground/5 mb-4" />
@@ -334,8 +444,9 @@ export default function DashboardPage({ params }: PageProps) {
                     Partnerliğe geçerek ekibini kurmaya başla, adaylarının gelişimini takip et ve tüm kaynaklara eriş.
                   </p>
                   <Link href="/auth/register">
-                    <Button variant="secondary" className="w-full font-black text-primary py-6 rounded-2xl">
+                    <Button className="w-full font-black bg-white text-primary hover:bg-white/90 py-6 rounded-2xl gap-2 group">
                       PARTNER OL
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
                 </div>
@@ -406,12 +517,17 @@ export default function DashboardPage({ params }: PageProps) {
         </div>
       </main>
 
-      <ChildDetailModal
-        isOpen={!!selectedChild}
-        onClose={() => setSelectedChild(null)}
-        childName={selectedChild?.name || ""}
-        progress={childProgress}
-      />
+      {selectedChild && (
+        <ChildDetailModal
+          isOpen={!!selectedChild}
+          onClose={() => {
+            setSelectedChild(null);
+            setChildProgress([]);
+          }}
+          child={selectedChild}
+          progress={childProgress}
+        />
+      )}
 
       {/* Task 1: Announcement detail modal */}
       {selectedAnnouncement && (

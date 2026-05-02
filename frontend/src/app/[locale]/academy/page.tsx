@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Zap, ShieldCheck, Globe, ChevronDown } from "lucide-react";
+import { Zap, ShieldCheck, Globe, ChevronDown, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Navbar } from "@/components/ui/Navbar";
@@ -49,47 +49,60 @@ export default function AcademyPage({ params }: PageProps) {
   const { locale } = React.use(params);
   const t = useTranslations("academy");
   const { role } = useUserRole();
+  const isGuest = role === "GUEST";
+
   const [activeTab, setActiveTab] = useState<"SHORT" | "MASTERCLASS">("SHORT");
   const [selectedLocale, setSelectedLocale] = useState<string | null>(null);
   const [contents, setContents] = useState<AcademyContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [availableLocales, setAvailableLocales] = useState<string[]>([]);
 
+  // Favorites filter state
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
   const resolveLockReason = (item: AcademyContentItem): LockReason | undefined => {
     if (!item.is_locked) return undefined;
     return role === "GUEST" ? "guest" : "prerequisite";
   };
 
-  // Fetch the list of locales that actually have content — once on mount.
+  /** Fetch the set of favorited content IDs for authenticated users */
+  const loadFavorites = async () => {
+    if (isGuest) return;
+    try {
+      const res = await apiClient.get<{ content_id: string }[]>("/favorites");
+      setFavoriteIds(new Set(res.data.map((f) => f.content_id)));
+    } catch {
+      // not critical — silently fail
+    }
+  };
+
+  // Fetch locales once on mount
   useEffect(() => {
     apiClient
       .get<string[]>("/academy/locales")
       .then((res) => setAvailableLocales(res.data))
-      .catch(() => {
-        // Fallback: keep empty; dropdown only shows "Tümü/All"
-      });
+      .catch(() => {});
   }, []);
 
+  // Load favorites once we know the role
   useEffect(() => {
-    // AbortController cancels in-flight requests when activeTab/selectedLocale changes,
-    // preventing stale responses from overwriting newer tab data (race condition fix).
+    loadFavorites();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role]);
+
+  useEffect(() => {
     const controller = new AbortController();
 
     async function fetchContents(signal: AbortSignal) {
       setLoading(true);
       try {
-        // Locale is a UI-based filter — not URL-based.
-        // If no locale selected, backend returns all languages.
         const params = new URLSearchParams({ type: activeTab });
-        if (selectedLocale) {
-          params.set("locale", selectedLocale);
-        }
-        const res = await apiClient.get(`/academy/contents?${params.toString()}`, {
-          signal,
-        });
+        if (selectedLocale) params.set("locale", selectedLocale);
+
+        const res = await apiClient.get(`/academy/contents?${params.toString()}`, { signal });
         setContents(res.data);
       } catch (err) {
-        // Ignore AbortError — a new request is already in flight
         const axiosErr = err as { name?: string; code?: string };
         if (axiosErr?.name !== "CanceledError" && axiosErr?.code !== "ERR_CANCELED") {
           console.error("Failed to fetch academy contents:", err);
@@ -101,14 +114,14 @@ export default function AcademyPage({ params }: PageProps) {
 
     fetchContents(controller.signal);
 
-    // Re-fetch progress data when the user returns to this tab/page after watching a video.
-    // Each visibility-triggered fetch gets its own controller so it can also be aborted.
     let visibilityController: AbortController | null = null;
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         visibilityController?.abort();
         visibilityController = new AbortController();
+        // Re-fetch both contents and favorites when returning to page
         fetchContents(visibilityController.signal);
+        loadFavorites();
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -118,14 +131,20 @@ export default function AcademyPage({ params }: PageProps) {
       visibilityController?.abort();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, selectedLocale]);
+
+  // Filter to favorites when the toggle is active
+  const displayedContents = showFavorites
+    ? contents.filter((c) => favoriteIds.has(c.id))
+    : contents;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
       <main className="max-w-[1600px] mx-auto pt-32 px-6 pb-20">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-10 text-center"
@@ -140,25 +159,53 @@ export default function AcademyPage({ params }: PageProps) {
         {/* Global Search */}
         <SearchBar className="mb-8" locale={locale} />
 
-        {/* Content Type Tabs + Language Filter Row */}
+        {/* Content Type Tabs + Favorites + Language Filter Row */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
-          {/* Content Type Tabs */}
-          <div className="flex p-1.5 bg-foreground/5 backdrop-blur-md rounded-2xl border border-foreground/5 shadow-sm">
-            <TabButton
-              active={activeTab === "SHORT"}
-              onClick={() => setActiveTab("SHORT")}
-              icon={<Zap size={16} />}
-              label="Shorts"
-            />
-            <TabButton
-              active={activeTab === "MASTERCLASS"}
-              onClick={() => setActiveTab("MASTERCLASS")}
-              icon={<ShieldCheck size={16} />}
-              label="Masterclass"
-            />
+
+          {/* Left: Content Type Tabs + Favorites Toggle */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Content type tabs */}
+            <div className="flex p-1.5 bg-foreground/5 backdrop-blur-md rounded-2xl border border-foreground/5 shadow-sm">
+              <TabButton
+                active={activeTab === "SHORT"}
+                onClick={() => { setActiveTab("SHORT"); setShowFavorites(false); }}
+                icon={<Zap size={16} />}
+                label="Shorts"
+              />
+              <TabButton
+                active={activeTab === "MASTERCLASS"}
+                onClick={() => { setActiveTab("MASTERCLASS"); setShowFavorites(false); }}
+                icon={<ShieldCheck size={16} />}
+                label="Masterclass"
+              />
+            </div>
+
+            {/* Favorites toggle — only for authenticated users */}
+            {!isGuest && (
+              <button
+                onClick={() => setShowFavorites((v) => !v)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all text-xs font-black uppercase tracking-widest ${
+                  showFavorites
+                    ? "border-primary text-primary bg-primary/5 shadow-lg shadow-primary/10"
+                    : "border-foreground/10 text-foreground/40 hover:border-foreground/20 hover:text-foreground/60"
+                }`}
+                aria-label="Favorilerim"
+              >
+                <Heart
+                  size={14}
+                  className={showFavorites ? "fill-primary" : ""}
+                />
+                Favorilerim
+                {showFavorites && favoriteIds.size > 0 && (
+                  <span className="ml-0.5 bg-primary text-white rounded-full px-1.5 py-0.5 text-[9px] font-black">
+                    {favoriteIds.size}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
-          {/* Language Filter Dropdown */}
+          {/* Right: Language Filter Dropdown */}
           <div className="relative flex items-center gap-2 px-3 py-2 bg-foreground/5 rounded-xl border border-foreground/5 hover:border-foreground/10 transition-colors">
             <Globe className="w-3.5 h-3.5 text-foreground/40 shrink-0" />
             <select
@@ -186,7 +233,7 @@ export default function AcademyPage({ params }: PageProps) {
         {/* Content Grid */}
         <AnimatePresence mode="wait">
           <motion.div
-            key={`${activeTab}-${selectedLocale}`}
+            key={`${activeTab}-${selectedLocale}-${showFavorites ? "fav" : "all"}`}
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
@@ -197,8 +244,8 @@ export default function AcademyPage({ params }: PageProps) {
               Array(6).fill(0).map((_, i) => (
                 <div key={i} className="aspect-video bg-foreground/5 rounded-2xl animate-pulse" />
               ))
-            ) : contents.length > 0 ? (
-              contents.map((item) => (
+            ) : displayedContents.length > 0 ? (
+              displayedContents.map((item) => (
                 <ContentCard
                   key={item.id}
                   id={item.id}
@@ -212,6 +259,10 @@ export default function AcademyPage({ params }: PageProps) {
                   progress={item.progress ?? undefined}
                 />
               ))
+            ) : showFavorites ? (
+              <div className="col-span-full py-20 text-center">
+                <div className="opacity-30 italic text-sm">Henüz favori içerik eklemediniz.</div>
+              </div>
             ) : (
               <div className="col-span-full py-20 text-center opacity-20 italic">
                 {t("no_results")}

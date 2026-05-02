@@ -59,7 +59,7 @@ export default function LoginPage() {
 
       {/* Right Side: Form */}
       <div className="flex items-center justify-center p-6 sm:p-12 relative bg-surface/20">
-        <div className="absolute top-0 right-0 p-8">
+        <div className="absolute top-0 right-0 p-8 z-10">
           <Link href="/">
             <Button variant="ghost" size="sm" className="gap-2 text-foreground/40 hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" /> Ana Sayfaya Dön

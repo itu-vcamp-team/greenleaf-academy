@@ -122,12 +122,12 @@ export default function MasterclassPlayerPage({ params }: PageProps) {
             {/* Player Side (Left / full-width on mobile) */}
             <div className="lg:col-span-2 space-y-4">
 
-              {/* Task 5: Video with side-nav arrows on desktop, hidden on mobile */}
-              <div className="relative flex items-center">
-                {/* Prev arrow — left of video, only on lg+ */}
+              {/* Video with side-nav arrows on desktop — flex layout avoids z-index overlap with right panel */}
+              <div className="flex items-center gap-3">
+                {/* Prev arrow — flex item, only on lg+ */}
                 <Link
                   href={content.prev_id ? `/academy/masterclass/${content.prev_id}` : "#"}
-                  className={`hidden lg:flex absolute -left-16 items-center justify-center
+                  className={`hidden lg:flex shrink-0 items-center justify-center
                               w-12 h-12 rounded-2xl border-2 transition-all
                               ${content.prev_id
                                 ? "border-foreground/20 text-foreground/60 hover:border-primary hover:text-primary hover:shadow-lg hover:shadow-primary/10"
@@ -137,8 +137,8 @@ export default function MasterclassPlayerPage({ params }: PageProps) {
                   <ChevronLeft size={20} />
                 </Link>
 
-                {/* Video player */}
-                <div className="relative w-full aspect-video rounded-3xl overflow-hidden glass border-foreground/5 shadow-2xl bg-black flex-1">
+                {/* Video player — takes all available space */}
+                <div className="relative flex-1 aspect-video rounded-3xl overflow-hidden glass border-foreground/5 shadow-2xl bg-black">
                   {content.is_locked ? (
                     <LockedVideoOverlay />
                   ) : (
@@ -147,7 +147,6 @@ export default function MasterclassPlayerPage({ params }: PageProps) {
                       contentId={content.id}
                       initialPosition={content.progress?.last_position_seconds ?? 0}
                       onProgressUpdate={(percentage) => {
-                        // Task 7: live update progress bar
                         setProgressPct(percentage);
                         if (percentage >= 85) setIsCompleted(true);
                       }}
@@ -155,10 +154,10 @@ export default function MasterclassPlayerPage({ params }: PageProps) {
                   )}
                 </div>
 
-                {/* Next arrow — right of video, only on lg+ */}
+                {/* Next arrow — flex item, only on lg+ */}
                 <Link
                   href={content.next_id ? `/academy/masterclass/${content.next_id}` : "#"}
-                  className={`hidden lg:flex absolute -right-16 items-center justify-center
+                  className={`hidden lg:flex shrink-0 items-center justify-center
                               w-12 h-12 rounded-2xl border-2 transition-all
                               ${content.next_id
                                 ? "border-primary/30 text-primary hover:border-primary hover:shadow-lg hover:shadow-primary/20 bg-primary/5"
@@ -307,26 +306,6 @@ export default function MasterclassPlayerPage({ params }: PageProps) {
                     </>
                   )}
 
-                  {/* Task 5: Desktop prev/next stay in right panel (lg+ only) */}
-                  <div className="hidden lg:grid grid-cols-2 gap-3 pt-4 border-t border-foreground/10">
-                    <Link href={content.prev_id ? `/academy/masterclass/${content.prev_id}` : "#"}>
-                      <Button
-                        variant="outline"
-                        className="w-full rounded-2xl text-[10px] font-black h-12"
-                        disabled={!content.prev_id}
-                      >
-                        ← ÖNCEKİ
-                      </Button>
-                    </Link>
-                    <Link href={content.next_id ? `/academy/masterclass/${content.next_id}` : "#"}>
-                      <Button
-                        className="w-full rounded-2xl text-[10px] font-black h-12 shadow-lg shadow-primary/20"
-                        disabled={!content.next_id}
-                      >
-                        SONRAKİ →
-                      </Button>
-                    </Link>
-                  </div>
                 </div>
 
                 <div className="bg-foreground/[0.03] p-4 rounded-2xl border border-foreground/10">

@@ -18,13 +18,15 @@ class AcademyRepository(AsyncBaseRepository[AcademyContent]):
         content_type: ContentType,
         locale: Optional[str] = None,
         include_draft: bool = False,
-        public_only: bool = False
+        public_only: bool = False,
+        public_first: bool = False,
     ) -> List[AcademyContent]:
         """
         Fetch contents by type and optionally filter by locale.
         If locale is None, returns all locales.
         public_only=True filters to is_public=True (used for guest views).
-        Results are sorted: public items first, then by order ASC.
+        public_first=True sorts public items before private ones (guest view).
+        Partners always see the admin-defined order (order ASC only).
         """
         stmt = select(AcademyContent).where(
             AcademyContent.type == content_type
@@ -38,11 +40,15 @@ class AcademyRepository(AsyncBaseRepository[AcademyContent]):
         if public_only:
             stmt = stmt.where(AcademyContent.is_public == True)
 
-        # public items first, then by lexorank order
-        stmt = stmt.order_by(
-            case((AcademyContent.is_public == True, 0), else_=1).asc(),
-            AcademyContent.order.asc()
-        )
+        if public_first:
+            # Guest view: public items float to the top, then by admin-defined order
+            stmt = stmt.order_by(
+                case((AcademyContent.is_public == True, 0), else_=1).asc(),
+                AcademyContent.order.asc()
+            )
+        else:
+            # Partner/admin view: respect admin's custom sort order exactly
+            stmt = stmt.order_by(AcademyContent.order.asc())
 
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
@@ -86,10 +92,10 @@ class AcademyRepository(AsyncBaseRepository[AcademyContent]):
     ) -> List[dict]:
         """
         Complex fetch: matches content with user progress and calculates 'is_locked'.
-        Public items are sorted first within the result.
+        Uses admin-defined order only (no public-first for partners).
         """
-        # 1. Fetch all published contents for this type/locale (public first)
-        contents = await self.get_contents_by_type(content_type, locale)
+        # 1. Fetch all published contents for this type/locale in admin's custom order
+        contents = await self.get_contents_by_type(content_type, locale, public_first=False)
         if not contents:
             return []
 
@@ -147,23 +153,29 @@ class AcademyRepository(AsyncBaseRepository[AcademyContent]):
             await self.session.execute(stmt)
             prev_id = content_id
 
-    async def get_with_neighbors(self, content_id: uuid.UUID) -> dict:
+    async def get_with_neighbors(self, content_id: uuid.UUID, public_first: bool = False) -> dict:
         """
         Fetches content along with its next and previous IDs in the sequence.
+        public_first=True for guests (public items float to top), False for partners
+        (admin-defined order only).
         """
         content = await self.get_by_id(content_id)
         if not content:
             return None
 
-        # Find neighbors within the same type and locale
+        # Find neighbors within the same type and locale using the correct sort order
         stmt = select(AcademyContent).where(
             AcademyContent.type == content.type,
             AcademyContent.locale == content.locale,
             AcademyContent.status == ContentStatus.PUBLISHED
-        ).order_by(
-            case((AcademyContent.is_public == True, 0), else_=1).asc(),
-            AcademyContent.order.asc()
         )
+        if public_first:
+            stmt = stmt.order_by(
+                case((AcademyContent.is_public == True, 0), else_=1).asc(),
+                AcademyContent.order.asc()
+            )
+        else:
+            stmt = stmt.order_by(AcademyContent.order.asc())
         
         result = await self.session.execute(stmt)
         all_contents = result.scalars().all()

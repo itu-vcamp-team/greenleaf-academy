@@ -133,8 +133,7 @@ export default function DashboardPreviewPage() {
             <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
               <Link href="/auth/register">
                 <Button
-                  variant="secondary"
-                  className="w-full font-black text-primary py-5 px-10 rounded-2xl shadow-xl gap-2 group"
+                  className="w-full font-black bg-white text-primary hover:bg-white/90 py-5 px-10 rounded-2xl shadow-xl gap-2 group"
                 >
                   Partner Ol
                   <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -328,8 +327,7 @@ export default function DashboardPreviewPage() {
                 </p>
                 <Link href="/auth/register">
                   <Button
-                    variant="secondary"
-                    className="w-full font-black text-primary py-6 rounded-2xl gap-2 group"
+                    className="w-full font-black bg-white text-primary hover:bg-white/90 py-6 rounded-2xl gap-2 group"
                   >
                     PARTNER OL
                     <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

@@ -155,17 +155,26 @@ export default function YouTubePlayer({
     <div
       className="relative w-full h-full bg-black overflow-hidden select-none"
       data-plyr-mode={vertical ? "vertical" : "horizontal"}
+      // Prevent right-click context menu on the video container so the embedded
+      // YouTube URL is not exposed. The YouTube iframe itself also has
+      // pointer-events:none (see YouTubePlayer.module.css) so its internal links
+      // are not reachable anyway.
+      onContextMenu={(e) => e.preventDefault()}
     >
-      {/* Target for Plyr */}
+      {/* Target for Plyr — Plyr mounts its controls inside this element */}
       <div
         ref={videoRef}
         data-plyr-provider="youtube"
         data-plyr-embed-id={videoId}
       />
-      
-      {/* Security Overlays */}
-      <div className="absolute top-0 left-0 w-full h-[60px] z-10 bg-transparent pointer-events-auto" />
-      <div className="absolute bottom-0 right-0 w-[100px] h-[50px] z-10 bg-transparent pointer-events-auto" />
+      {/*
+        NOTE: We deliberately do NOT render transparent pointer-capturing overlay
+        divs here. Any sibling div with pointer-events active would intercept
+        mousemove/mouseenter on the area it covers, causing Plyr to emit a
+        "mouseleave" on its own container and immediately hide the control bar
+        (fullscreen, settings, fast-forward, etc.). Context-menu prevention via
+        onContextMenu is sufficient since the iframe already has pointer-events:none.
+      */}
     </div>
   );
 }

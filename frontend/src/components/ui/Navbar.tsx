@@ -164,13 +164,17 @@ export function Navbar() {
   const isGuest = role === "GUEST";
   const showContacts = contacts.length > 0 && role !== "ADMIN";
 
-  // Fetch contact info (public; shown for guest + partner, not admin)
+  // Fetch contact info (public; shown for guest + partner, not admin).
+  // We do NOT clear contacts on failure so a re-fetch when role transitions
+  // GUEST → PARTNER can never wipe contacts that were already loaded.
   useEffect(() => {
     if (role === "ADMIN") return;
     apiClient
       .get("/contact-info")
-      .then((res) => setContacts(res.data ?? []))
-      .catch(() => setContacts([]));
+      .then((res) => {
+        if (res.data?.length > 0) setContacts(res.data);
+      })
+      .catch(() => {}); // silently fail — keep any previously loaded contacts
   }, [role]);
 
   // Close desktop contacts dropdown on outside click

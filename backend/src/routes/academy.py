@@ -72,8 +72,8 @@ async def list_contents(
     repo = AcademyRepository(db)
 
     if current_user.role == UserRole.GUEST:
-        # All content is visible; is_public drives lock status
-        contents = await repo.get_contents_by_type(type, locale, public_only=False)
+        # Guest: all content visible; is_public drives lock status; public items sort first
+        contents = await repo.get_contents_by_type(type, locale, public_only=False, public_first=True)
         return [_build_guest_response(c) for c in contents]
 
     # Partner+ Logic
@@ -161,7 +161,8 @@ async def get_content(
     Enforces prerequisite locking for non-guest users.
     """
     repo = AcademyRepository(db)
-    result = await repo.get_with_neighbors(content_id)
+    is_guest = current_user.role == UserRole.GUEST
+    result = await repo.get_with_neighbors(content_id, public_first=is_guest)
 
     if not result:
         raise NotFoundError("İçerik bulunamadı.")

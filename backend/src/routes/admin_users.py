@@ -166,6 +166,7 @@ async def get_my_children(
             "partner_id": child.partner_id,
             "joined_at": child.created_at.isoformat() if child.created_at else None,
             "status": "ACTIVE" if child.is_active else "PENDING_APPROVAL",
+            "profile_image_path": child.profile_image_path,
             "shorts_percentage": shorts_stats["percentage"],
             "masterclass_percentage": masterclass_stats["percentage"],
             "progress": {
