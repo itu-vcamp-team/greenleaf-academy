@@ -8,6 +8,7 @@ from src.datalayer.model.db.user import User, UserRole
 from src.datalayer.model.db.academy_content import AcademyContent, ContentType, ContentStatus
 from src.datalayer.model.db.user_progress import UserProgress
 from src.datalayer.model.db.resource_link import ResourceLink
+from src.datalayer.model.db.favorite import Favorite
 from src.services.academy_service import AcademyService
 
 
@@ -54,6 +55,13 @@ async def seed_initial_data():
         await session.execute(
             delete(UserProgress).where(
                 UserProgress.content_id.in_(
+                    select(AcademyContent.id)
+                )
+            )
+        )
+        await session.execute(
+            delete(Favorite).where(
+                Favorite.content_id.in_(
                     select(AcademyContent.id)
                 )
             )
