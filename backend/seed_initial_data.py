@@ -11,7 +11,7 @@ from src.datalayer.model.db.resource_link import ResourceLink
 from src.datalayer.model.db.favorite import Favorite
 from src.services.academy_service import AcademyService
 
-
+#deploy
 async def seed_initial_data():
     async with AsyncSessionFactory() as session:
 
