@@ -33,5 +33,20 @@ services:
     ports:
       - "6379:6379"
 
+  arq-worker:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      - APP_ENV=development
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql+asyncpg://greenleaf:greenleaf_dev@postgres:5432/greenleaf_db
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    command: arq src.worker.WorkerSettings
+
 volumes:
   postgres_data:

@@ -60,11 +60,11 @@ export function Footer() {
 
             {/* Contact */}
             <a
-              href="mailto:kvkk@greenleafakademi.com"
+              href="mailto:help@greenleafakademi.com"
               className="inline-flex items-center gap-2 text-xs text-foreground/40 hover:text-primary transition-colors"
             >
               <Mail size={13} />
-              kvkk@greenleafakademi.com
+              help@greenleafakademi.com
             </a>
           </div>
 

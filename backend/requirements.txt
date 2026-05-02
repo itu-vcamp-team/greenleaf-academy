@@ -258,5 +258,6 @@ yarl==1.23.0
     # via aiohttp
 
 # The following packages are considered to be unsafe in a requirements file:
-# pip
 # setuptools
+aioboto3
+arq

@@ -6,47 +6,29 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+import aioboto3
+from botocore.exceptions import ClientError
+from arq import create_pool
+from arq.connections import RedisSettings
 
 from src.config import get_settings
 from src.logger import logger
 
 settings = get_settings()
 
-# Gmail API yalnızca e-posta gönderme iznine ihtiyaç duyar
-_GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+_arq_pool = None
 
-
-def _get_gmail_service():
-    """
-    OAuth2 refresh token kullanarak kimliği doğrulanmış bir Gmail API servisi döndürür.
-    Her çağrıda gerekirse token otomatik olarak yenilenir.
-    """
-    # .strip() — Render/env'den gelirken oluşabilecek trailing whitespace/newline'ı temizler
-    client_id = settings.GMAIL_CLIENT_ID.strip()
-    client_secret = settings.GMAIL_CLIENT_SECRET.strip()
-    refresh_token = settings.GMAIL_REFRESH_TOKEN.strip()
-
-    creds = Credentials(
-        token=None,
-        refresh_token=refresh_token,
-        token_uri="https://oauth2.googleapis.com/token",
-        client_id=client_id,
-        client_secret=client_secret,
-        scopes=_GMAIL_SCOPES,
-    )
-    # Token süresi dolmuşsa yenile
-    creds.refresh(Request())
-    return build("gmail", "v1", credentials=creds, cache_discovery=False)
+async def get_arq_pool():
+    global _arq_pool
+    if _arq_pool is None:
+        _arq_pool = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
+    return _arq_pool
 
 
 class MailingService:
     """
-    Gmail API (OAuth2) kullanarak HTML e-posta gönderen servis.
-    Resend SDK'nın yerine geçer; tüm public metotlar aynı imzayı korur.
+    AWS SES kullanarak HTML e-posta gönderen servis.
+    Tüm public metotlar aynı imzayı korur.
     """
 
     MAIL_FROM_NAME = "Greenleaf Akademi"
@@ -57,22 +39,18 @@ class MailingService:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _build_raw_message(
+    def _build_mime_message(
         to: str | list[str],
         subject: str,
         html: str,
         attachments: list[dict] | None = None,
-    ) -> dict:
+    ) -> MIMEMultipart:
         """
-        E-posta içeriğini Gmail API'nin beklediği base64url-encoded 'raw' dict'e dönüştürür.
-
-        attachments formatı (Resend-uyumlu):
-            [{"filename": "...", "content": "<base64_string>", "content_type": "..."}]
+        E-posta içeriğini AWS SES'in beklediği MIMEMultipart'a dönüştürür.
         """
         recipients = [to] if isinstance(to, str) else to
 
         if attachments:
-            # Ek varsa mixed/alternative iç içe yapı kur
             outer = MIMEMultipart("mixed")
             alt_part = MIMEMultipart("alternative")
             alt_part.attach(MIMEText(html, "html", "utf-8"))
@@ -102,32 +80,7 @@ class MailingService:
         msg["To"] = ", ".join(recipients)
         msg["Subject"] = subject
 
-        raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
-        return {"raw": raw}
-
-    @staticmethod
-    def _send_sync(
-        to: str | list[str],
-        subject: str,
-        html: str,
-        attachments: list[dict] | None = None,
-    ) -> bool:
-        """
-        Senkron Gmail API çağrısı. asyncio executor aracılığıyla çalıştırılır,
-        doğrudan çağrılmamalıdır.
-        """
-        try:
-            service = _get_gmail_service()
-            body = MailingService._build_raw_message(to, subject, html, attachments)
-            service.users().messages().send(userId="me", body=body).execute()
-            logger.info(f"Email sent successfully to {to} | Subject: {subject}")
-            return True
-        except HttpError as exc:
-            logger.error(f"Gmail API HttpError sending to {to} | {exc.status_code}: {exc.error_details}")
-            return False
-        except Exception as exc:
-            logger.error(f"Failed to send email to {to} | Error: {exc}")
-            return False
+        return msg
 
     @staticmethod
     async def _send_email(
@@ -136,21 +89,39 @@ class MailingService:
         html: str,
         attachments: list[dict] | None = None,
     ) -> bool:
-        """Async e-posta gönderme katmanı. Tüm public metotlar bunu kullanır."""
-        if not settings.GMAIL_REFRESH_TOKEN:
+        """Async AWS SES e-posta gönderme katmanı."""
+        if not settings.AWS_ACCESS_KEY_ID:
             logger.warning(
-                f"GMAIL_REFRESH_TOKEN set edilmemiş. "
+                f"AWS_ACCESS_KEY_ID set edilmemiş. "
                 f"E-posta atlandı → {to} | Konu: {subject}"
             )
             if settings.APP_ENV == "development":
                 logger.debug(f"Email Content (skipped): {html}")
             return True
 
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None,
-            lambda: MailingService._send_sync(to, subject, html, attachments),
-        )
+        msg = MailingService._build_mime_message(to, subject, html, attachments)
+        recipients = [to] if isinstance(to, str) else to
+
+        try:
+            session = aioboto3.Session(
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_SES_REGION,
+            )
+            async with session.client("ses") as client:
+                await client.send_raw_email(
+                    Source=MailingService.FROM_ADDRESS,
+                    Destinations=recipients,
+                    RawMessage={"Data": msg.as_string()},
+                )
+            logger.info(f"Email sent successfully to {to} | Subject: {subject}")
+            return True
+        except ClientError as exc:
+            logger.error(f"AWS SES ClientError sending to {to} | {exc}")
+            return False
+        except Exception as exc:
+            logger.error(f"Failed to send email to {to} | Error: {exc}")
+            return False
 
     # ------------------------------------------------------------------
     # Public email methods (imzalar korundu)
@@ -297,11 +268,14 @@ class MailingService:
         """
 
         BATCH_SIZE = 50
+        pool = await get_arq_pool()
         success = True
         for i in range(0, len(recipient_emails), BATCH_SIZE):
             batch = recipient_emails[i : i + BATCH_SIZE]
-            res = await MailingService._send_email(batch, f"📢 Yeni Etkinlik: {event_title}", html)
-            if not res:
+            try:
+                await pool.enqueue_job("send_bulk_email_task", batch, f"📢 Yeni Etkinlik: {event_title}", html, None)
+            except Exception as e:
+                logger.error(f"Failed to enqueue bulk email task: {e}")
                 success = False
         return success
 
@@ -366,15 +340,14 @@ class MailingService:
         """
 
         BATCH_SIZE = 50
+        pool = await get_arq_pool()
         success = True
         for i in range(0, len(recipient_emails), BATCH_SIZE):
             batch = recipient_emails[i : i + BATCH_SIZE]
-            res = await MailingService._send_email(
-                batch,
-                f"📅 Etkinlik Güncellendi: {event_title}",
-                html,
-            )
-            if not res:
+            try:
+                await pool.enqueue_job("send_bulk_email_task", batch, f"📅 Etkinlik Güncellendi: {event_title}", html, None)
+            except Exception as e:
+                logger.error(f"Failed to enqueue bulk email task: {e}")
                 success = False
         return success
 
@@ -446,16 +419,14 @@ class MailingService:
             ]
 
         BATCH_SIZE = 50
+        pool = await get_arq_pool()
         success = True
         for i in range(0, len(recipient_emails), BATCH_SIZE):
             batch = recipient_emails[i : i + BATCH_SIZE]
-            res = await MailingService._send_email(
-                batch,
-                f"❌ Etkinlik İptal Edildi: {event_title}",
-                html,
-                attachments,
-            )
-            if not res:
+            try:
+                await pool.enqueue_job("send_bulk_email_task", batch, f"❌ Etkinlik İptal Edildi: {event_title}", html, attachments)
+            except Exception as e:
+                logger.error(f"Failed to enqueue bulk email task: {e}")
                 success = False
         return success
 

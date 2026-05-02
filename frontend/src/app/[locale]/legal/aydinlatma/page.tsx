@@ -51,8 +51,8 @@ export default function AydinlatmaPage() {
               <p><strong className="text-foreground">Platform:</strong> Greenleaf Akademi — greenleafakademi.com</p>
               <p>
                 <strong className="text-foreground">İletişim:</strong>{" "}
-                <a href="mailto:kvkk@greenleafakademi.com" className="text-blue-600 underline hover:opacity-80">
-                  kvkk@greenleafakademi.com
+                <a href="mailto:help@greenleafakademi.com" className="text-blue-600 underline hover:opacity-80">
+                  help@greenleafakademi.com
                 </a>
               </p>
             </div>
@@ -295,8 +295,8 @@ export default function AydinlatmaPage() {
                 <p className="font-black text-foreground">📧 E-Posta ile Başvuru (Önerilen)</p>
                 <p className="mt-1">
                   Konu: <em>&ldquo;KVKK Hakkı Kullanım Talebi&rdquo;</em> başlığıyla{" "}
-                  <a href="mailto:kvkk@greenleafakademi.com" className="text-blue-600 underline hover:opacity-80 font-semibold">
-                    kvkk@greenleafakademi.com
+                  <a href="mailto:help@greenleafakademi.com" className="text-blue-600 underline hover:opacity-80 font-semibold">
+                    help@greenleafakademi.com
                   </a>{" "}
                   adresine e-posta gönderebilirsiniz. Başvuruda ad-soyadınız, kayıtlı e-posta adresiniz
                   ve talebinizin açıklamasının bulunması süreci hızlandıracaktır.

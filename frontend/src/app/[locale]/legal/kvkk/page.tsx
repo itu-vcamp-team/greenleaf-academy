@@ -44,8 +44,8 @@ export default function KVKKPage() {
               <p><strong className="text-foreground">Web Adresi:</strong> https://greenleafakademi.com</p>
               <p>
                 <strong className="text-foreground">KVKK Başvuru İletişimi:</strong>{" "}
-                <a href="mailto:kvkk@greenleafakademi.com" className="text-primary underline hover:opacity-80">
-                  kvkk@greenleafakademi.com
+                <a href="mailto:help@greenleafakademi.com" className="text-primary underline hover:opacity-80">
+                  help@greenleafakademi.com
                 </a>
               </p>
             </div>
@@ -361,8 +361,8 @@ export default function KVKKPage() {
             <div className="bg-surface/50 rounded-2xl p-5 text-sm text-foreground/70 space-y-2">
               <p>
                 <strong className="text-foreground">📧 E-Posta (tercih edilen):</strong>{" "}
-                <a href="mailto:kvkk@greenleafakademi.com" className="text-primary underline hover:opacity-80">
-                  kvkk@greenleafakademi.com
+                <a href="mailto:help@greenleafakademi.com" className="text-primary underline hover:opacity-80">
+                  help@greenleafakademi.com
                 </a>
               </p>
               <p>

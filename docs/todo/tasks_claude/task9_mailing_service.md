@@ -403,3 +403,12 @@ Mailing sistemi Nesne Yönelimli (OO) mimariyle başarıyla kuruldu.
 - **8 Şablon:** Kayıt aktivasyonundan takvim davetine kadar tüm temel senaryolar için HTML şablonları (inline CSS ile) hazırlandı.
 - **Background Tasks:** Mail gönderimleri kullanıcıyı bekletmeyecek şekilde asenkron hale getirildi.
 - **Hata Giderme:** `pyjwt` ve `email-validator` bağımlılıkları Docker katmanında çözüldü.
+
+## 📝 Implementation Summary (2026-05-02)
+
+Mailing sistemi Gmail API'den AWS SES ve ARQ asenkron kuyruk mimarisine taşındı:
+- **Kütüphaneler:** Google API paketleri ve Celery kaldırıldı; `aioboto3` ve `arq` projeye dahil edildi.
+- **AWS SES Entegrasyonu:** `_send_email` metodu `aioboto3.Session` üzerinden `send_raw_email` çağıracak şekilde refactor edildi. Takvim `.ics` eklentilerini bozmamak için var olan `MIMEMultipart` raw data oluşturucu korundu.
+- **Toplu Gönderim & Asenkron Kuyruk (ARQ):** Toplu e-posta (Event Announcement vb.) işlemleri için `worker.py` oluşturuldu. `RedisSettings.from_dsn` üzerinden ARQ kullanılarak toplu gönderimler arka planda (retry mekanizması ile birlikte) kuyruğa alındı.
+- **Docker:** `arq-worker` servisi `docker-compose.yml` içerisine eklendi ve `redis` bağımlılığı ayarlandı.
+- **Konfigürasyonlar:** `GMAIL_*` yerine `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` ve `AWS_SES_REGION` (eu-north-1) eklendi.

@@ -34,10 +34,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
-    # Email (Gmail API – OAuth2 Refresh Token)
-    GMAIL_CLIENT_ID: str = ""
-    GMAIL_CLIENT_SECRET: str = ""
-    GMAIL_REFRESH_TOKEN: str = ""
+    # Email (AWS SES)
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_SES_REGION: str = "eu-north-1"
     MAIL_FROM_ADDRESS: str = "noreply@greenleafakademi.com"
     MAIL_FROM_NAME: str = "Greenleaf Akademi"
 

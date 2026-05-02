@@ -170,13 +170,6 @@ export default function CalendarPage() {
               )}
             </GlassCard>
 
-            <div className="p-6 bg-primary/5 rounded-[2rem] border border-primary/10">
-              <h4 className="text-sm font-black text-primary uppercase tracking-widest mb-4">Önemli Not</h4>
-              <p className="text-xs text-foreground/60 leading-relaxed italic">
-                Tüm yayınlar kayıt altına alınmakta ve 24 saat sonra Akademi - Masterclass bölümüne yüklenmektedir.
-              </p>
-            </div>
-
             {/* Legend */}
             <div className="p-4 glass rounded-2xl border-foreground/5 space-y-2">
               <p className="text-[10px] font-black text-foreground/30 uppercase tracking-widest mb-3">Gösterge</p>
