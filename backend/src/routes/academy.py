@@ -22,6 +22,24 @@ from src.exceptions import PrerequisiteNotMetError, NotFoundError
 router = APIRouter(prefix="/academy", tags=["Academy"])
 
 
+@router.get("/locales")
+async def get_content_locales(
+    db: AsyncSession = Depends(get_db_session),
+    current_user=Depends(get_optional_user),
+):
+    """
+    Returns a sorted list of distinct content locales available in the database.
+    Used by the frontend to populate the language filter dropdown dynamically.
+    """
+    from sqlalchemy import select, distinct
+    from src.datalayer.model.db.academy_content import AcademyContent
+
+    stmt = select(distinct(AcademyContent.locale)).order_by(AcademyContent.locale)
+    result = await db.execute(stmt)
+    locales = result.scalars().all()
+    return sorted(locales)
+
+
 def _build_guest_response(content) -> GuestContentResponse:
     """
     Build a GuestContentResponse from a content DB object.

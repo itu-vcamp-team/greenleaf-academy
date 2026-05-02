@@ -16,6 +16,14 @@ function getLocale(pathname: string): string {
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // 0. Root path için explicit redirect: / → /tr-TR
+  //    (Google botları ve kullanıcılar root'tan geldiğinde doğru sayfaya yönlendirilir)
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL(`/${DEFAULT_LOCALE}`, request.url), {
+      status: 301, // Kalıcı yönlendirme — Google bunu cacheler
+    });
+  }
+
   // 1. Get auth state from cookies
   const token = request.cookies.get("access_token")?.value;
   const role = request.cookies.get("user_role")?.value;

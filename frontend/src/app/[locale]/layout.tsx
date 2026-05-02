@@ -5,8 +5,29 @@ import { UserRoleProvider } from "@/context/UserRoleContext";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Footer } from "@/components/layout/Footer";
+import type { Metadata } from "next";
 
 import { Toaster } from "sonner";
+
+const BASE_URL = "https://tr.greenleafakademi.com";
+
+// Generates hreflang alternate links for every page in both locales
+export async function generateMetadata(
+  props: { params: Promise<{ locale: string }> }
+): Promise<Metadata> {
+  const { locale } = await props.params;
+
+  return {
+    metadataBase: new URL(BASE_URL),
+    alternates: {
+      languages: {
+        "tr-TR": `${BASE_URL}/tr-TR`,
+        "en-US": `${BASE_URL}/en-US`,
+        "x-default": `${BASE_URL}/tr-TR`,
+      },
+    },
+  };
+}
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 

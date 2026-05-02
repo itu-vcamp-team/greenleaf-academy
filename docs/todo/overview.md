@@ -101,12 +101,34 @@ Referans: [`roadmap/overview.md`](../roadmap/overview.md)
 
 ---
 
+## 🔍 SEO & Routing Düzeltmeleri (2026-05-02)
+
+> Faz dışı acil SEO ve routing sorunlarının giderilmesi.
+
+| # | Görev | Durum |
+|---|-------|-------|
+| S1 | Root path (`/`) → `/tr-TR` 301 kalıcı yönlendirmesi (`middleware.ts`) | ✅ Tamamlandı |
+| S2 | `hreflang` alternate link'leri tüm sayfalara eklendi (`[locale]/layout.tsx` `generateMetadata`) | ✅ Tamamlandı |
+| S3 | `sitemap.ts` oluşturuldu – tüm public statik sayfalar, iki dil | ✅ Tamamlandı |
+| S4 | `robots.ts` oluşturuldu – public allow, admin/dashboard/auth disallow, sitemap referansı | ✅ Tamamlandı |
+
+### Implementation Summary
+- `middleware.ts`: `pathname === "/"` için diğer auth kontrollerinden önce `301 Redirect` → `/${DEFAULT_LOCALE}` eklendi. Böylece Google botları ve kullanıcılar root domainden doğru içeriğe ulaşır.
+- `[locale]/layout.tsx`: `generateMetadata` fonksiyonu eklendi. Her sayfa renderında Next.js otomatik olarak `<link rel="alternate" hreflang="tr-TR" ...>`, `<link rel="alternate" hreflang="en-US" ...>` ve `x-default` etiketlerini `<head>`'e inject eder.
+- `app/sitemap.ts`: Next.js'in native `sitemap()` API'si ile 7 public rota × 2 dil = 14 URL'lik `sitemap.xml` üretildi. Her URL için `alternates.languages` de eklendi.
+- `app/robots.ts`: Next.js native `robots()` API'si ile `robots.txt` üretildi.
+
+> ⚠️ **Yapılacak (Human):** Site deploy edilince [Google Search Console](https://search.google.com/search-console)'a `https://tr.greenleafakademi.com` subdomaini eklenmeli ve `https://tr.greenleafakademi.com/sitemap.xml` adresi bildirilmelidir.
+
+---
+
 ## 📊 Özet İlerleme
 
 | Faz | Toplam Görev | Tamamlanan | Durum |
 |-----|-------------|------------|-------|
 | Ön Hazırlık | 5 | 5 | ✅ Tamamlandı |
 | Faz 1 – Altyapı | 9 (7 Claude + 2 Human) | 9 | ✅ Tamamlandı |
+| SEO & Routing | 4 | 4 | ✅ Tamamlandı |
 | Faz 2 – Akademi | 6 (5 Claude + 1 Human) | 0 | ⬜ Başlanmadı |
 | Canlıya Geçiş | 2 (Human) | 0 | ⬜ Başlanmadı |
 | Faz 3 – Global | Planlanacak | — | 📋 Planlandı |

@@ -17,11 +17,15 @@
     "password": "Password",
     "username": "Username",
     "profile": "My Profile",
-    "captcha_hint": "Enter the sum of the numbers"
+    "captcha_hint": "Enter the sum of the numbers",
+    "login_hint": "Access your arsenal by logging in.",
+    "logging_in": "Logging in..."
   },
   "academy": {
+    "name": "Academy",
     "title": "Greenleaf Academy",
     "subtitle": "Develop yourself and grow your professional network.",
+    "academy_progress": "Academy Progress",
     "continue_watching": "Continue watching",
     "locked": "This content is locked",
     "locked_hint": "Complete the previous lesson to unlock this content.",
@@ -46,6 +50,11 @@
     "view_resource": "View Resource File",
     "watching": "Watching...",
     "add_favorite": "Add to Favorites",
-    "progress": "Progress"
+    "progress": "Progress",
+    "status_completed": "Completed",
+    "status_in_progress": "In Progress",
+    "status_not_started": "Not Started",
+    "filter_all": "All",
+    "language_filter": "Language"
   }
 }

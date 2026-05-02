@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Zap, ShieldCheck, Globe } from "lucide-react";
+import { Zap, ShieldCheck, Globe, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Navbar } from "@/components/ui/Navbar";
@@ -35,11 +35,15 @@ interface AcademyContentItem {
   } | null;
 }
 
-const LANGUAGE_FILTERS = [
-  { label: "Tümü", value: null, flag: "🌐" },
-  { label: "Türkçe", value: "tr-TR", flag: "🇹🇷" },
-  { label: "English", value: "en-US", flag: "🇬🇧" },
-];
+/** Mapping of locale codes to display info */
+const LOCALE_META: Record<string, { label: string; flag: string }> = {
+  "tr-TR": { label: "Türkçe", flag: "🇹🇷" },
+  "en-US": { label: "English", flag: "🇬🇧" },
+  "de-DE": { label: "Deutsch", flag: "🇩🇪" },
+  "fr-FR": { label: "Français", flag: "🇫🇷" },
+  "es-ES": { label: "Español", flag: "🇪🇸" },
+  "ar-SA": { label: "العربية", flag: "🇸🇦" },
+};
 
 export default function AcademyPage({ params }: PageProps) {
   const { locale } = React.use(params);
@@ -49,11 +53,22 @@ export default function AcademyPage({ params }: PageProps) {
   const [selectedLocale, setSelectedLocale] = useState<string | null>(null);
   const [contents, setContents] = useState<AcademyContentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [availableLocales, setAvailableLocales] = useState<string[]>([]);
 
   const resolveLockReason = (item: AcademyContentItem): LockReason | undefined => {
     if (!item.is_locked) return undefined;
     return role === "GUEST" ? "guest" : "prerequisite";
   };
+
+  // Fetch the list of locales that actually have content — once on mount.
+  useEffect(() => {
+    apiClient
+      .get<string[]>("/academy/locales")
+      .then((res) => setAvailableLocales(res.data))
+      .catch(() => {
+        // Fallback: keep empty; dropdown only shows "Tümü/All"
+      });
+  }, []);
 
   useEffect(() => {
     // AbortController cancels in-flight requests when activeTab/selectedLocale changes,
@@ -143,22 +158,28 @@ export default function AcademyPage({ params }: PageProps) {
             />
           </div>
 
-          {/* Language Filter */}
-          <div className="flex items-center gap-1.5 p-1 bg-foreground/5 rounded-xl border border-foreground/5">
-            <Globe className="w-3.5 h-3.5 text-foreground/30 ml-2" />
-            {LANGUAGE_FILTERS.map((filter) => (
-              <button
-                key={filter.label}
-                onClick={() => setSelectedLocale(filter.value)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                  selectedLocale === filter.value
-                    ? "bg-surface text-primary border border-primary/10 shadow-sm"
-                    : "text-foreground/40 hover:text-foreground/60"
-                }`}
-              >
-                {filter.flag} {filter.label}
-              </button>
-            ))}
+          {/* Language Filter Dropdown */}
+          <div className="relative flex items-center gap-2 px-3 py-2 bg-foreground/5 rounded-xl border border-foreground/5 hover:border-foreground/10 transition-colors">
+            <Globe className="w-3.5 h-3.5 text-foreground/40 shrink-0" />
+            <select
+              value={selectedLocale ?? ""}
+              onChange={(e) => setSelectedLocale(e.target.value || null)}
+              className="appearance-none bg-transparent text-[11px] font-black uppercase tracking-widest text-foreground/70 outline-none cursor-pointer pr-5 min-w-[80px]"
+              aria-label={t("language_filter")}
+            >
+              <option value="">
+                {t("filter_all")}
+              </option>
+              {availableLocales.map((lc) => {
+                const meta = LOCALE_META[lc];
+                return (
+                  <option key={lc} value={lc}>
+                    {meta ? `${meta.flag} ${meta.label}` : lc}
+                  </option>
+                );
+              })}
+            </select>
+            <ChevronDown className="w-3 h-3 text-foreground/30 pointer-events-none absolute right-3" />
           </div>
         </div>
 

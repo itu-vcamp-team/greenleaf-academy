@@ -266,7 +266,7 @@ export function LoginForm() {
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <h1 className="text-2xl font-bold mb-2">{t("login")}</h1>
-                <p className="text-foreground/40 text-sm italic">Giriş yaparak cephaneliğinize erişin.</p>
+                <p className="text-foreground/40 text-sm italic">{t("login_hint")}</p>
               </div>
 
               <form onSubmit={handleLogin} className="space-y-4">
@@ -322,7 +322,7 @@ export function LoginForm() {
                   size="lg"
                   disabled={loading || !turnstileToken}
                 >
-                  {loading ? "Giriş Yapılıyor..." : t("login")}
+                  {loading ? t("logging_in") : t("login")}
                 </Button>
 
                 <div className="text-center pt-4 border-t border-foreground/5">

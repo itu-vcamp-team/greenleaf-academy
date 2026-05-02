@@ -17,11 +17,15 @@
     "password": "Şifre",
     "username": "Kullanıcı Adı",
     "profile": "Profilim",
-    "captcha_hint": "Ekrandaki sayıların toplamını girin"
+    "captcha_hint": "Ekrandaki sayıların toplamını girin",
+    "login_hint": "Giriş yaparak cephaneliğinize erişin.",
+    "logging_in": "Giriş Yapılıyor..."
   },
   "academy": {
+    "name": "Akademi",
     "title": "Greenleaf Akademi",
     "subtitle": "Kendinizi geliştirin ve profesyonel ağınızı büyütün.",
+    "academy_progress": "Akademi İlerlemesi",
     "continue_watching": "Kaldığın yerden devam et",
     "locked": "Bu içerik kilitli",
     "locked_hint": "Bu içeriği izlemek için önceki dersi tamamlaman gerekiyor.",
@@ -46,6 +50,11 @@
     "view_resource": "Kaynak Dosyasını Görüntüle",
     "watching": "İzleniyor...",
     "add_favorite": "Favorilerime Ekle",
-    "progress": "İlerleme"
+    "progress": "İlerleme",
+    "status_completed": "Tamamlandı",
+    "status_in_progress": "İzleniyor",
+    "status_not_started": "Başlamadı",
+    "filter_all": "Tümü",
+    "language_filter": "Dil"
   }
 }

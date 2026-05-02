@@ -58,7 +58,7 @@ export default function ChildDetailModal({
           <div className="p-8 border-b border-foreground/10 flex justify-between items-start bg-gradient-to-br from-background to-surface">
             <div>
               <h2 className="text-2xl font-black text-foreground tracking-tight">{childName}</h2>
-              <p className="text-foreground/40 text-sm font-medium mt-1 uppercase tracking-widest">{t("academy")} {t("progress")}</p>
+              <p className="text-foreground/40 text-sm font-medium mt-1 uppercase tracking-widest">{t("academy_progress")}</p>
             </div>
             <button 
               onClick={onClose}
@@ -85,7 +85,7 @@ export default function ChildDetailModal({
           {/* Progress List */}
           <div className="flex-1 overflow-y-auto p-8 space-y-4">
             {filteredProgress.length === 0 ? (
-              <div className="text-center py-12 text-foreground/30 italic font-medium">Sonuç bulunamadı</div>
+              <div className="text-center py-12 text-foreground/30 italic font-medium">{t("no_results")}</div>
             ) : (
               filteredProgress.map((item) => (
                 <div 
@@ -109,11 +109,11 @@ export default function ChildDetailModal({
                   <div className="flex flex-col items-end gap-1.5 min-w-[100px]">
                     <div className="flex items-center gap-2">
                        {item.status === "completed" ? (
-                         <span className="text-[10px] font-black text-green-600 bg-green-500/10 px-2 py-1 rounded-lg border border-green-500/20">TAMAMLANDI</span>
+                         <span className="text-[10px] font-black text-green-600 bg-green-500/10 px-2 py-1 rounded-lg border border-green-500/20 uppercase">{t("status_completed")}</span>
                        ) : item.status === "in_progress" ? (
-                         <span className="text-[10px] font-black text-blue-500 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20">İZLENİYOR</span>
+                         <span className="text-[10px] font-black text-blue-500 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20 uppercase">{t("status_in_progress")}</span>
                        ) : (
-                         <span className="text-[10px] font-black text-foreground/40 bg-foreground/5 px-2 py-1 rounded-lg border border-foreground/10">BAŞLAMADI</span>
+                         <span className="text-[10px] font-black text-foreground/40 bg-foreground/5 px-2 py-1 rounded-lg border border-foreground/10 uppercase">{t("status_not_started")}</span>
                        )}
                        <span className="text-xs font-black text-foreground">{Math.round(item.percentage)}%</span>
                     </div>
