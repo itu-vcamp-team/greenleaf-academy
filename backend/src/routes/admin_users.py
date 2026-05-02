@@ -120,6 +120,26 @@ async def list_all_users(
         sort_by=sort_by, sort_dir=sort_dir, page=page, size=size
     )
 
+
+@router.get("/event-guests", dependencies=[Depends(get_current_admin)])
+async def list_event_guests(
+    db: AsyncSession = Depends(get_db_session),
+    search: Optional[str] = Query(None),
+    sort_by: str = Query("created_at"),
+    sort_dir: str = Query("desc"),
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=100)
+):
+    """
+    Etkinlik takvim daveti için isim/e-posta dolduran misafir ziyaretçileri listeler.
+    Bu kişiler kayıtlı üye değil, etkinliğe misafir olarak katılmak isteyen kişilerdir.
+    """
+    repo = UserRepository(db)
+    service = AdminUserService(repo)
+    return await service.list_event_guests(
+        search=search, sort_by=sort_by, sort_dir=sort_dir, page=page, size=size
+    )
+
 @router.post("/{user_id}/toggle-active", dependencies=[Depends(get_current_admin)])
 async def toggle_user_active(
     user_id: uuid.UUID,

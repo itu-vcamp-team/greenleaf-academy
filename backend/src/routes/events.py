@@ -16,7 +16,7 @@ from src.services.event_service import EventService
 from src.services.mailing_service import MailingService
 from src.utils.auth_deps import get_current_admin, get_current_partner, get_optional_user
 from src.utils.ical_generator import generate_ics, generate_cancellation_ics
-from src.datalayer.model.dto.event_dto import EventResponse, GuestEventResponse, GuestCalendarRequest, RsvpResponse
+from src.datalayer.model.dto.event_dto import EventResponse, GuestEventResponse, GuestCalendarRequest, RsvpResponse, RsvpEnrichedResponse
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
@@ -175,13 +175,16 @@ async def list_admin_events(
     return [EventResponse.model_validate(e) for e in events]
 
 
-@router.get("/{event_id}/calendar-rsvps", response_model=list[RsvpResponse])
+@router.get("/{event_id}/calendar-rsvps", response_model=list[RsvpEnrichedResponse])
 async def get_calendar_rsvps(
     event_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
     admin_user: User = Depends(get_current_admin),
 ):
-    """Admin: returns all calendar-invite RSVPs for a given event."""
+    """Admin: returns all calendar-invite RSVPs for a given event, enriched with partner profile data."""
+    from sqlalchemy import select as sa_select
+    from src.datalayer.model.db.event_calendar_rsvp import EventCalendarRsvp
+
     event_repo = EventRepository(db)
     event = await event_repo.get_by_id(event_id)
     if not event:
@@ -189,7 +192,49 @@ async def get_calendar_rsvps(
 
     rsvp_repo = EventCalendarRsvpRepository(db)
     rsvps = await rsvp_repo.get_by_event_id(event_id)
-    return [RsvpResponse.model_validate(r) for r in rsvps]
+
+    enriched = []
+    for r in rsvps:
+        item = RsvpEnrichedResponse(
+            id=r.id,
+            event_id=r.event_id,
+            email=r.email,
+            full_name=r.full_name,
+            is_member=r.is_member,
+            created_at=r.created_at,
+            user_id=r.user_id,
+        )
+        # If authenticated member, fetch user profile data
+        if r.is_member and r.user_id:
+            stmt = sa_select(User).where(User.id == r.user_id)
+            res = await db.execute(stmt)
+            user_obj = res.scalar_one_or_none()
+            if user_obj:
+                item.username = user_obj.username
+                item.partner_id = user_obj.partner_id
+                item.profile_image_path = user_obj.profile_image_path
+                item.phone = user_obj.phone
+                item.user_is_active = user_obj.is_active
+                # Use registered full_name if RSVP didn't record it
+                if not item.full_name:
+                    item.full_name = user_obj.full_name
+
+        enriched.append(item)
+    return enriched
+
+
+@router.get("/{event_id}/detail", response_model=EventResponse)
+async def get_event_detail(
+    event_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db_session),
+    admin_user: User = Depends(get_current_admin),
+):
+    """Admin: returns full event detail by ID."""
+    repo = EventRepository(db)
+    event = await repo.get_by_id(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Etkinlik bulunamadı.")
+    return EventResponse.model_validate(event)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

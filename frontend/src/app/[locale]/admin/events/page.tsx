@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import React from "react";
+import { useRouter } from "@/i18n/navigation";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
   Plus, Trash2, Pencil, Calendar, Loader2,
   Globe, Lock, Video, Users, Briefcase, MapPin,
-  CheckCircle, Send, CalendarCheck, X, UserCheck, UserX, Bell, BellRing,
+  CheckCircle, Send, CalendarCheck, Bell, BellRing,
+  ExternalLink, X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "@/lib/api-client";
@@ -28,14 +31,6 @@ interface CalendarEvent {
   contact_info: string | null;
   visibility: EventVisibility;
   is_published?: boolean;
-}
-
-interface RsvpItem {
-  id: string;
-  email: string;
-  full_name: string | null;
-  is_member: boolean;
-  created_at: string;
 }
 
 const emptyForm = {
@@ -65,6 +60,7 @@ const CATEGORY_LABELS: Record<EventCategory, string> = {
 };
 
 export default function AdminEventsPage() {
+  const router = useRouter();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -74,12 +70,7 @@ export default function AdminEventsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
 
-  // RSVP modal state
-  const [rsvpModal, setRsvpModal] = useState<{ eventId: string; title: string } | null>(null);
-  const [rsvps, setRsvps] = useState<RsvpItem[]>([]);
-  const [loadingRsvp, setLoadingRsvp] = useState(false);
-
-  // Task 5: Notification confirmation dialog after edit
+  // Notification confirmation dialog after edit
   const [notifyDialog, setNotifyDialog] = useState<{ eventId: string; title: string } | null>(null);
   const [notifying, setNotifying] = useState(false);
 
@@ -96,20 +87,6 @@ export default function AdminEventsPage() {
       console.error("Failed to fetch events");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const openRsvpModal = async (event: CalendarEvent) => {
-    setRsvpModal({ eventId: event.id, title: event.title });
-    setRsvps([]);
-    setLoadingRsvp(true);
-    try {
-      const res = await apiClient.get(`/events/${event.id}/calendar-rsvps`);
-      setRsvps(res.data);
-    } catch {
-      setRsvps([]);
-    } finally {
-      setLoadingRsvp(false);
     }
   };
 
@@ -298,16 +275,17 @@ export default function AdminEventsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                      {/* RSVP list button */}
+                      {/* RSVP detail page button */}
                       <Button
                         variant="outline"
                         size="sm"
                         className="gap-1 rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50"
-                        onClick={() => openRsvpModal(event)}
-                        title="Takvim davet isteklerini gör"
+                        onClick={() => router.push(`/admin/events/${event.id}/rsvps`)}
+                        title="Takvim davet detay sayfasını aç"
                       >
                         <CalendarCheck size={12} />
                         Takvim İstekleri
+                        <ExternalLink size={10} />
                       </Button>
 
                       {/* Task 5 fix: show Publish button when is_published is false OR null */}
@@ -502,90 +480,7 @@ export default function AdminEventsPage() {
         )}
       </AnimatePresence>
 
-      {/* ── RSVP Modal ── */}
-      <AnimatePresence>
-        {rsvpModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={(e) => e.target === e.currentTarget && setRsvpModal(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              className="bg-surface rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
-            >
-              {/* Header */}
-              <div className="px-8 py-6 border-b border-border flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2 text-blue-600 mb-1">
-                    <CalendarCheck size={16} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Takvim İstekleri</span>
-                  </div>
-                  <h2 className="text-xl font-black text-foreground leading-tight line-clamp-2">
-                    {rsvpModal.title}
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setRsvpModal(null)}
-                  className="text-foreground/40 hover:text-foreground/60 transition-colors flex-shrink-0 mt-1"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Body */}
-              <div className="flex-1 overflow-y-auto px-8 py-6">
-                {loadingRsvp ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 size={24} className="animate-spin text-primary" />
-                  </div>
-                ) : rsvps.length === 0 ? (
-                  <div className="text-center py-12">
-                    <CalendarCheck size={40} className="mx-auto text-foreground/10 mb-3" />
-                    <p className="text-foreground/40 italic text-sm">Henüz takvim isteği yok.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-4">
-                      Toplam {rsvps.length} kişi takvime ekledi
-                    </p>
-                    {rsvps.map((rsvp) => (
-                      <div
-                        key={rsvp.id}
-                        className="flex items-center gap-3 p-3 rounded-xl border border-border bg-surface hover:border-primary/20 transition-colors"
-                      >
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${rsvp.is_member ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-500"}`}>
-                          {rsvp.is_member ? <UserCheck size={14} /> : <UserX size={14} />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          {rsvp.full_name && (
-                            <p className="text-sm font-bold text-foreground truncate">{rsvp.full_name}</p>
-                          )}
-                          <p className="text-xs text-foreground/50 truncate">{rsvp.email}</p>
-                        </div>
-                        <div className="flex-shrink-0 text-right">
-                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${rsvp.is_member ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-600"}`}>
-                            {rsvp.is_member ? "Üye" : "Misafir"}
-                          </span>
-                          <p className="text-[9px] text-foreground/40 mt-1">
-                            {new Date(rsvp.created_at).toLocaleDateString("tr-TR")}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Task 5: Notify Users Dialog (shown after edit) ── */}
+      {/* ── Notify Users Dialog (shown after edit) ── */}
       <AnimatePresence>
         {notifyDialog && (
           <motion.div

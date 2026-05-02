@@ -17,10 +17,12 @@ export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 0. Root path için explicit redirect: / → /tr-TR
-  //    (Google botları ve kullanıcılar root'tan geldiğinde doğru sayfaya yönlendirilir)
+  //    302 kullanıyoruz: 301 (kalıcı) tarayıcı/Cloudflare tarafından agresif
+  //    şekilde cache'lenir; yanlış bir URL'ye bir kez 301 giderse temizlemek
+  //    zor olur. 302 ile her seferinde sunucudan kontrol edilir.
   if (pathname === "/") {
     return NextResponse.redirect(new URL(`/${DEFAULT_LOCALE}`, request.url), {
-      status: 301, // Kalıcı yönlendirme — Google bunu cacheler
+      status: 302,
     });
   }
 

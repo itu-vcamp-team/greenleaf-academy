@@ -53,6 +53,28 @@ export function RegistrationFlow() {
     phone: "",
   });
 
+  // Real-time username validation
+  const [usernameError, setUsernameError] = useState<string>("");
+  const [usernameOk, setUsernameOk] = useState(false);
+
+  const validateUsernameLocal = (val: string): string => {
+    if (!val) return "";
+    if (val.length < 3) return "En az 3 karakter olmalıdır.";
+    if (val.length > 50) return "En fazla 50 karakter olabilir.";
+    if (/\s/.test(val)) return "Boşluk kullanılamaz.";
+    if (!/^[a-zA-Z0-9_.-]+$/.test(val))
+      return "Yalnızca harf, rakam, _, . ve - kullanılabilir.";
+    if (/^[._-]/.test(val)) return "Harf veya rakamla başlamalıdır.";
+    return "";
+  };
+
+  const handleUsernameChange = (val: string) => {
+    setFormData((f) => ({ ...f, username: val }));
+    const err = validateUsernameLocal(val);
+    setUsernameError(err);
+    setUsernameOk(val.length >= 3 && !err);
+  };
+
   // Step 3: Consent checkboxes (must both be checked)
   const [kvkkChecked, setKvkkChecked] = useState(false);
   const [aydinlatmaChecked, setAydinlatmaChecked] = useState(false);
@@ -308,13 +330,24 @@ export function RegistrationFlow() {
                   required
                 />
                 <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Kullanıcı Adı"
-                    placeholder="ahmet_y"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    required
-                  />
+                  <div>
+                    <Input
+                      label="Kullanıcı Adı"
+                      placeholder="ahmet_y"
+                      value={formData.username}
+                      onChange={(e) => handleUsernameChange(e.target.value)}
+                      required
+                    />
+                    {usernameError && (
+                      <p className="text-red-400 text-[10px] mt-1 leading-tight">{usernameError}</p>
+                    )}
+                    {usernameOk && (
+                      <p className="text-emerald-500 text-[10px] mt-1">✓ Uygun format</p>
+                    )}
+                    {!usernameError && !formData.username && (
+                      <p className="text-foreground/30 text-[9px] mt-1 italic">Boşluk kullanmayın. Örn: ahmet_y</p>
+                    )}
+                  </div>
                   <Input
                     label="E-Posta"
                     type="email"

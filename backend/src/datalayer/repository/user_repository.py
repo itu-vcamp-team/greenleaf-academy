@@ -1,8 +1,9 @@
 import uuid
 from typing import Optional, List, Tuple
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, desc
 from sqlalchemy.orm import aliased
 from src.datalayer.model.db.user import User, UserRole
+from src.datalayer.model.db.event_calendar_rsvp import EventCalendarRsvp
 from src.datalayer.repository._base_repository import AsyncBaseRepository
 
 
@@ -46,6 +47,7 @@ class UserRepository(AsyncBaseRepository[User]):
             .outerjoin(Inviter, User.inviter_id == Inviter.id)
             .where(
                 User.is_active == False,
+                User.is_verified == True,   # Only show verified users waiting for approval
                 User.role.notin_([UserRole.ADMIN, UserRole.EDITOR])
             )
         )
@@ -146,3 +148,56 @@ class UserRepository(AsyncBaseRepository[User]):
         result = await self.session.execute(stmt)
         items = result.scalars().all()
         return list(items), total
+
+    async def get_event_guests_paginated(
+        self,
+        search: Optional[str] = None,
+        sort_by: str = "created_at",
+        sort_dir: str = "desc",
+        page: int = 1,
+        size: int = 50
+    ) -> Tuple[List[dict], int]:
+        """Get all unauthenticated event RSVP guests (is_member=False) with pagination."""
+        stmt = (
+            select(EventCalendarRsvp)
+            .where(EventCalendarRsvp.is_member == False)
+        )
+
+        if search:
+            search_term = f"%{search}%"
+            stmt = stmt.where(
+                or_(
+                    EventCalendarRsvp.full_name.ilike(search_term),
+                    EventCalendarRsvp.email.ilike(search_term),
+                )
+            )
+
+        # Count total
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_result = await self.session.execute(count_stmt)
+        total = total_result.scalar() or 0
+
+        # Sorting
+        sort_col = getattr(EventCalendarRsvp, sort_by, EventCalendarRsvp.created_at)
+        if sort_dir.lower() == "asc":
+            stmt = stmt.order_by(sort_col.asc())
+        else:
+            stmt = stmt.order_by(sort_col.desc())
+
+        # Pagination
+        stmt = stmt.offset((page - 1) * size).limit(size)
+
+        result = await self.session.execute(stmt)
+        rows = result.scalars().all()
+
+        items = []
+        for r in rows:
+            items.append({
+                "id": str(r.id),
+                "event_id": str(r.event_id),
+                "email": r.email,
+                "full_name": r.full_name,
+                "is_member": r.is_member,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            })
+        return items, total

@@ -95,6 +95,26 @@ class AdminUserService:
             "pages": math.ceil(total / size) if size > 0 else 0
         }
 
+    async def list_event_guests(
+        self,
+        search: Optional[str] = None,
+        sort_by: str = "created_at",
+        sort_dir: str = "desc",
+        page: int = 1,
+        size: int = 50
+    ) -> dict:
+        """List unauthenticated event RSVP guests (people who filled name/email for event calendar invites)."""
+        items, total = await self.repo.get_event_guests_paginated(
+            search=search, sort_by=sort_by, sort_dir=sort_dir, page=page, size=size
+        )
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "size": size,
+            "pages": math.ceil(total / size) if size > 0 else 0
+        }
+
     async def toggle_user_active(self, user_id: uuid.UUID) -> User:
         """Toggle a user's active status."""
         user = await self.repo.get_by_id(user_id)

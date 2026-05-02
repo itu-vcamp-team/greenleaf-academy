@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.datalayer.model.db.user import User, UserRole
 from src.datalayer.model.db.academy_content import AcademyContent, ContentStatus, ContentType
 from src.datalayer.model.db.user_progress import UserProgress
+from src.datalayer.model.db.event_calendar_rsvp import EventCalendarRsvp
 from src.utils.rank_utils import (
     compute_rank,
     POINTS_PER_SHORT,
@@ -38,20 +39,26 @@ class AdminStatsService:
             )
         ).scalar() or 0
 
-        # ── 2. Total Guests ──────────────────────────────────────────────────────
+        # ── 2. Total Event Guests (unauthenticated RSVP filers) ─────────────────
+        # "Misafir" = people who filled name/email to get event calendar invites
+        # These are EventCalendarRsvp records with is_member=False (not registered users)
         total_guests = (
             await self.session.execute(
-                select(func.count(User.id)).where(User.role == UserRole.GUEST)
+                select(func.count(EventCalendarRsvp.id)).where(
+                    EventCalendarRsvp.is_member == False
+                )
             )
         ).scalar() or 0
 
-        # ── 3. Pending Approvals (verified guests not yet activated) ─────────────
+        # ── 3. Pending Approvals (PARTNER role, verified but not yet activated) ──
+        # New registrations create users with role=PARTNER, is_active=False, is_verified=True
+        # They need admin approval to become active partners
         pending_approvals = (
             await self.session.execute(
                 select(func.count(User.id)).where(
                     User.is_verified == True,
                     User.is_active == False,
-                    User.role == UserRole.GUEST,
+                    User.role == UserRole.PARTNER,
                 )
             )
         ).scalar() or 0

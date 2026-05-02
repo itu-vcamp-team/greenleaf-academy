@@ -9,12 +9,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "@/i18n/navigation";
 import apiClient from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth.store";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
 import { Turnstile, TurnstileInstance } from "@marsidev/react-turnstile";
 
 export function LoginForm() {
   const t = useTranslations("auth");
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [show2FA, setShow2FA] = useState(false);
@@ -41,6 +42,7 @@ export function LoginForm() {
   const [forgotStep, setForgotStep] = useState(1); // 1: Email, 2: Code & New Pwd
   const [forgotData, setForgotData] = useState({ email: "", code: "", new_password: "", confirm_password: "" });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
 
@@ -72,7 +74,9 @@ export function LoginForm() {
         
         setAuth(profileRes.data, tokens.access_token, tokens.refresh_token);
         const isAdmin = ["ADMIN", "EDITOR"].includes(profileRes.data.role);
-        router.push(isAdmin ? "/admin" : "/dashboard");
+        // window.location.href ensures a full page reload so the server-side
+        // middleware sees the newly-set auth cookies before rendering the page.
+        window.location.href = `/${locale}/${isAdmin ? "admin" : "dashboard"}`;
       }
     } catch (err) {
       const e = err as { response?: { data?: { detail?: string } } };
@@ -104,7 +108,8 @@ export function LoginForm() {
       
       setAuth(profileRes.data, access_token, refresh_token);
       const isAdmin = ["ADMIN", "EDITOR"].includes(profileRes.data.role);
-      router.push(isAdmin ? "/admin" : "/dashboard");
+      // Full page reload so middleware sees the new cookies reliably.
+      window.location.href = `/${locale}/${isAdmin ? "admin" : "dashboard"}`;
     } catch (err) {
       const e = err as { response?: { data?: { detail?: string } } };
       setError(e.response?.data?.detail || "Doğrulama kodu hatalı.");
@@ -270,14 +275,19 @@ export function LoginForm() {
               </div>
 
               <form onSubmit={handleLogin} className="space-y-4">
-                <Input
-                  label={t("username")}
-                  placeholder="kullaniciadiniz"
-                  icon={<User className="w-4 h-4" />}
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  required
-                />
+                <div>
+                  <Input
+                    label="Kullanıcı Adı veya E-posta"
+                    placeholder="kullaniciadiniz veya email@ornek.com"
+                    icon={<User className="w-4 h-4" />}
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    required
+                  />
+                  <p className="text-[10px] text-foreground/30 mt-1 italic ml-1">
+                    Kullanıcı adınızı veya kayıtlı e-posta adresinizi girebilirsiniz.
+                  </p>
+                </div>
                 <div className="relative">
                   <Input
                     label={t("password")}

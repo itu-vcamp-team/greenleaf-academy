@@ -328,13 +328,18 @@ async def login(
         if not await CaptchaService.verify_turnstile_token(data.captcha_token):
             raise HTTPException(status_code=400, detail="Güvenlik doğrulaması başarısız.")
 
-        # 2. Find User
-        stmt = select(User).where(User.username == data.username)
+        # 2. Find User — accepts either username OR email in the `username` field
+        login_input = data.username.strip()
+        if "@" in login_input:
+            # Treat input as e-mail
+            stmt = select(User).where(User.email == login_input)
+        else:
+            stmt = select(User).where(User.username == login_input)
         res = await db.execute(stmt)
         user = res.scalar_one_or_none()
 
         if not user or not PasswordService.verify_password(data.password, user.password_hash):
-            raise HTTPException(status_code=401, detail="Invalid username or password.")
+            raise HTTPException(status_code=401, detail="Kullanıcı adı/e-posta veya şifre hatalı.")
 
         if not user.is_active:
             raise HTTPException(status_code=403, detail="Account is not active. Please contact admin.")
@@ -491,6 +496,7 @@ async def forgot_password(
 @router.post("/reset-password")
 async def reset_password(
     data: ResetPasswordSchema,
+    request: Request,
     db: AsyncSession = Depends(get_db_session)
 ):
     """Verifies OTP and resets password using email."""
@@ -513,6 +519,19 @@ async def reset_password(
     await SessionService.deactivate_all_user_sessions(db, user.id)
     
     await db.commit()
+
+    # 5. Clear the login rate-limit block/count for this IP so the user can
+    #    immediately log in with their new password without hitting the 15-min block.
+    try:
+        ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+        ip = ip.split(",")[0].strip()
+        r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        await r.delete(f"rl_block:{ip}:/api/auth/login")
+        await r.delete(f"rl_count:{ip}:/api/auth/login")
+        await r.aclose()
+    except Exception as e:
+        logger.warning(f"Could not clear rate-limit keys after password reset: {e}")
+
     return {"message": "Şifreniz başarıyla sıfırlandı. Yeni şifrenizle giriş yapabilirsiniz."}
 
 
@@ -619,6 +638,7 @@ async def request_password_change(
 @router.post("/profile/password-reset/verify")
 async def verify_password_change(
     data: PasswordChangeVerifySchema,
+    request: Request,
     db: AsyncSession = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -647,6 +667,18 @@ async def verify_password_change(
     current_user.password_hash = new_password_hash
     await SessionService.deactivate_all_user_sessions(db, current_user.id)
     await db.commit()
+
+    # Clear the login rate-limit block/count for this IP so the user can
+    # immediately log in with their new password without hitting the 15-min block.
+    try:
+        ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+        ip = ip.split(",")[0].strip()
+        r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        await r.delete(f"rl_block:{ip}:/api/auth/login")
+        await r.delete(f"rl_count:{ip}:/api/auth/login")
+        await r.aclose()
+    except Exception as e:
+        logger.warning(f"Could not clear rate-limit keys after password change: {e}")
 
     return {"message": "Şifreniz başarıyla güncellendi. Güvenliğiniz için tüm oturumlar sonlandırıldı. Lütfen tekrar giriş yapın."}
 

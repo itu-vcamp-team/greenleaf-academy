@@ -6,7 +6,8 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import {
   UserCheck, UserX, Shield, Mail, Calendar,
   Loader2, BadgeCheck, Users, ToggleLeft, ToggleRight,
-  UserPlus, X, Eye, EyeOff, Search, ArrowUpDown, ArrowUp, ArrowDown
+  UserPlus, X, Eye, EyeOff, Search, ArrowUpDown, ArrowUp, ArrowDown,
+  CalendarCheck, UserRound,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "@/lib/api-client";
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useUserRole } from "@/context/UserRoleContext";
 
-type Tab = "pending" | "all";
+type Tab = "pending" | "all" | "guests";
 
 interface UserRow {
   id: string;
@@ -25,6 +26,16 @@ interface UserRow {
   is_active: boolean;
   is_verified: boolean;
   partner_id: string | null;
+  created_at: string;
+}
+
+// ─── Event Guest (RSVP) row ───────────────────────────────────────────────────
+interface EventGuestRow {
+  id: string;
+  event_id: string;
+  email: string;
+  full_name: string | null;
+  is_member: boolean;
   created_at: string;
 }
 
@@ -60,6 +71,7 @@ export default function AdminUsersPage() {
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [pendingData, setPendingData] = useState<PaginatedData<UserRow>>({ items: [], total: 0, page: 1, size: 50, pages: 0 });
   const [allData, setAllData] = useState<PaginatedData<UserRow>>({ items: [], total: 0, page: 1, size: 50, pages: 0 });
+  const [guestsData, setGuestsData] = useState<PaginatedData<EventGuestRow>>({ items: [], total: 0, page: 1, size: 50, pages: 0 });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,6 +114,8 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (activeTab === "pending") {
       fetchPending();
+    } else if (activeTab === "guests") {
+      fetchGuests();
     } else {
       fetchAll();
     }
@@ -142,6 +156,24 @@ export default function AdminUsersPage() {
       setAllData(res.data);
     } catch {
       console.error("Fetch all users error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchGuests = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (debouncedSearchTerm) params.append("search", debouncedSearchTerm);
+      params.append("sort_by", sortConfig.key === "created_at" ? "created_at" : "created_at");
+      params.append("sort_dir", sortConfig.direction);
+      params.append("page", String(page));
+      params.append("size", String(size));
+      const res = await apiClient.get(`/admin/users/event-guests?${params.toString()}`);
+      setGuestsData(res.data);
+    } catch {
+      console.error("Fetch event guests error");
     } finally {
       setLoading(false);
     }
@@ -291,7 +323,7 @@ export default function AdminUsersPage() {
       </header>
 
       {/* Tab Switcher */}
-      <div className="flex gap-2 p-1.5 bg-surface rounded-2xl w-fit">
+      <div className="flex gap-2 p-1.5 bg-surface rounded-2xl w-fit flex-wrap">
         <TabButton
           active={activeTab === "pending"}
           onClick={() => setActiveTab("pending")}
@@ -303,6 +335,13 @@ export default function AdminUsersPage() {
           onClick={() => setActiveTab("all")}
           icon={<Users size={14} />}
           label="Tüm Kullanıcılar"
+        />
+        <TabButton
+          active={activeTab === "guests"}
+          onClick={() => setActiveTab("guests")}
+          icon={<CalendarCheck size={14} />}
+          label={`Etkinlik Misafirleri (${guestsData.total})`}
+          color="blue"
         />
       </div>
 
@@ -328,6 +367,96 @@ export default function AdminUsersPage() {
         )}
       </div>
 
+      {/* ── Event Guests List ─────────────────────────────────────────── */}
+      {activeTab === "guests" ? (
+        <GlassCard className="border-border shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-border bg-blue-50/40">
+            <p className="text-xs font-black text-blue-700 uppercase tracking-widest flex items-center gap-2">
+              <CalendarCheck size={14} />
+              Etkinlik Takvim Davetlerini Dolduran Misafir Ziyaretçiler
+            </p>
+            <p className="text-[11px] text-foreground/40 mt-0.5 italic">
+              Bu kişiler sistemde kayıtlı değil; etkinliğe katılmak için ad/e-posta dolduranlar.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface/60 border-b border-border">
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-foreground/40">
+                    Misafir
+                  </th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-foreground/40">
+                    E-posta
+                  </th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-foreground/40">
+                    Kayıt Tarihi
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {loading ? (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-20 text-center">
+                      <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto opacity-30" />
+                    </td>
+                  </tr>
+                ) : guestsData.items.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-20 text-center text-foreground/40 font-medium italic">
+                      {searchTerm ? "Aramanıza uygun misafir bulunamadı." : "Henüz etkinlik misafiri yok."}
+                    </td>
+                  </tr>
+                ) : (
+                  guestsData.items.map((guest) => (
+                    <tr key={guest.id} className="hover:bg-surface/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                            <UserRound size={16} className="text-blue-500" />
+                          </div>
+                          <p className="font-bold text-sm text-foreground">
+                            {guest.full_name || <span className="text-foreground/30 italic">İsim yok</span>}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1 text-xs text-foreground/60">
+                          <Mail size={11} /> {guest.email}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground/40">
+                          <Calendar size={12} />
+                          {new Date(guest.created_at).toLocaleDateString("tr-TR")}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {guestsData.pages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-surface/30">
+              <span className="text-xs font-bold tracking-widest text-foreground/40 uppercase">
+                Toplam {guestsData.total} Misafir
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={guestsData.page === 1} className="rounded-xl">
+                  Önceki
+                </Button>
+                <span className="text-sm font-bold text-foreground">
+                  {guestsData.page} <span className="text-foreground/40 font-normal">/ {guestsData.pages}</span>
+                </span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(guestsData.pages, p + 1))} disabled={guestsData.page === guestsData.pages} className="rounded-xl">
+                  Sonraki
+                </Button>
+              </div>
+            </div>
+          )}
+        </GlassCard>
+      ) : (
       <GlassCard className="border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -373,7 +502,7 @@ export default function AdminUsersPage() {
                     <UserRow
                       key={user.id}
                       user={user}
-                      mode={activeTab}
+                      mode={activeTab as "pending" | "all"}
                       isActing={actionLoading === user.id}
                       onApprove={() => handleApprove(user.id)}
                       onReject={() => handleReject(user.id)}
@@ -418,6 +547,7 @@ export default function AdminUsersPage() {
           </div>
         )}
       </GlassCard>
+      )}
 
       {/* ── Create User Modal ── */}
       <AnimatePresence>
@@ -627,14 +757,18 @@ interface TabButtonProps {
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
+  color?: "default" | "blue";
 }
 
-function TabButton({ active, onClick, icon, label }: TabButtonProps) {
+function TabButton({ active, onClick, icon, label, color = "default" }: TabButtonProps) {
+  const activeClass = color === "blue"
+    ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100"
+    : "bg-surface text-foreground shadow-sm";
   return (
     <button
       onClick={onClick}
       className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-black transition-all ${
-        active ? "bg-surface text-foreground shadow-sm" : "text-foreground/40 hover:text-foreground/60"
+        active ? activeClass : "text-foreground/40 hover:text-foreground/60"
       }`}
     >
       {icon}
@@ -645,7 +779,7 @@ function TabButton({ active, onClick, icon, label }: TabButtonProps) {
 
 interface UserRowProps {
   user: UserRow;
-  mode: "pending" | "all";
+  mode: "pending" | "all" | "guests";
   isActing: boolean;
   onApprove?: () => void;
   onReject?: () => void;

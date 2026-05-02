@@ -65,3 +65,23 @@ class RsvpResponse(BaseModel):
     full_name: Optional[str] = None
     is_member: bool
     created_at: datetime
+
+
+class RsvpEnrichedResponse(BaseModel):
+    """
+    Calendar-RSVP record enriched with user/partner profile data.
+    Used in the admin RSVP detail page.
+    """
+    id: uuid.UUID
+    event_id: uuid.UUID
+    email: str
+    full_name: Optional[str] = None
+    is_member: bool
+    created_at: datetime
+    # Partner profile fields (only populated when is_member=True)
+    user_id: Optional[uuid.UUID] = None
+    username: Optional[str] = None
+    partner_id: Optional[str] = None
+    profile_image_path: Optional[str] = None
+    phone: Optional[str] = None
+    user_is_active: Optional[bool] = None

@@ -9,7 +9,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useThemeStore } from "@/store/theme.store";
 import {
   Sun, Moon, Calendar, User, LogOut, Menu, X,
-  Mail, Phone, Globe, Link2, MessageSquare, Play, ShieldCheck, ChevronDown, LayoutDashboard,
+  Mail, Phone, Globe, Link2, MessageSquare, Play, ShieldCheck, ChevronDown, LayoutDashboard, GraduationCap,
 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useEffect, useRef } from "react";
@@ -203,7 +203,7 @@ export function Navbar() {
       ? [{ href: "/dashboard-preview", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> }]
       : []),
     { href: "/calendar", label: t("calendar"), icon: <Calendar className="w-4 h-4" /> },
-    { href: "/academy", label: t("academy"), icon: null },
+    { href: "/academy", label: t("academy"), icon: <GraduationCap className="w-4 h-4" /> },
   ];
 
   return (

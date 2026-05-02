@@ -149,9 +149,9 @@ export default function AdminDashboardPage({ params }: PageProps) {
         />
         <StatCard
           icon={<UserX size={22} />}
-          label="Misafir Üye"
+          label="Etkinlik Misafiri"
           value={loading ? "…" : (stats?.total_guests ?? 0).toString()}
-          details="Kayıt olmuş misafir"
+          details="Kayıtsız etkinlik ziyaretçisi"
           color="orange"
           href={`/${locale}/admin/users`}
         />

@@ -31,6 +31,25 @@ class RegisterStep3Schema(BaseModel):
     kvkk_accepted: bool = False
     aydinlatma_accepted: bool = False
 
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v: str) -> str:
+        import re
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("Kullanıcı adı en az 3 karakter olmalıdır.")
+        if len(v) > 50:
+            raise ValueError("Kullanıcı adı en fazla 50 karakter olabilir.")
+        if " " in v:
+            raise ValueError("Kullanıcı adında boşluk kullanılamaz.")
+        if not re.match(r'^[a-zA-Z0-9_.-]+$', v):
+            raise ValueError(
+                "Kullanıcı adı yalnızca harf, rakam, alt çizgi (_), nokta (.) ve kısa çizgi (-) içerebilir."
+            )
+        if v.startswith(".") or v.startswith("-") or v.startswith("_"):
+            raise ValueError("Kullanıcı adı harf veya rakamla başlamalıdır.")
+        return v
+
     @field_validator("phone", mode="before")
     @classmethod
     def validate_phone(cls, v: Optional[str]) -> Optional[str]:

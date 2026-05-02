@@ -57,6 +57,7 @@ class ContentResponse(BaseModel):
     resource_link: Optional[str] = None
     resource_link_label: Optional[str] = None
     order: str
+    status: ContentStatus = ContentStatus.PUBLISHED  # Added for admin view
     is_new: bool
     is_public: bool = True
     is_locked: bool = False
